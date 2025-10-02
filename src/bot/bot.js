@@ -1,0 +1,35 @@
+const { Bot } = require('grammy');
+const mainRoutes = require('../routes/commands');
+const {sequelize} = require('../database/db');
+const { SocksProxyAgent } = require('socks-proxy-agent');
+const {setupAssociations} = require("../models");
+async function createBot(token) {
+    // Проверка подключения к БД
+    try {
+        await sequelize.authenticate();
+        console.log('Подключение к БД успешно');
+        setupAssociations();
+        await sequelize.sync(false);
+    } catch (error) {
+        console.error('Ошибка подключения к БД:', error);
+        process.exit(1);
+    }
+
+    const proxyUrl = process.env.SOCKS_PROXY;
+    const agent = new SocksProxyAgent(proxyUrl);
+
+    const bot = new Bot(process.env.BOT_TOKEN, {
+        client: {
+            baseFetchConfig: {
+                agent: agent,
+                compress: true
+            }
+        }
+    });
+
+    bot.use(mainRoutes);
+
+    return bot;
+}
+
+module.exports = createBot;
