@@ -1,6 +1,9 @@
-const {NotFoundError, UnauthorizedError} = require("../utils/errors");
+const {NotFoundError, UnauthorizedError, ValidationError} = require("../utils/errors");
 const StudentService = require("../services/studentService");
 const errorHandler = require("../utils/errorHandler");
+
+// Создаем экземпляр сервиса
+const studentService = new StudentService();
 
 function requireRegistration() {
     return async (ctx, next) => {
@@ -11,7 +14,7 @@ function requireRegistration() {
         }
 
         try {
-            const student = await StudentService.getStudentProfile(telegramId);
+            const student = await studentService.getStudentProfile(telegramId);
 
             if (!student) {
                 throw new NotFoundError('Telegram ID not found');

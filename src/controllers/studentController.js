@@ -2,6 +2,9 @@ const StudentService = require('../services/studentService');
 const errorHandler = require("../utils/errorHandler");
 const keyboardFactory = require("../services/keyboardFactory");
 
+// Создаем экземпляр сервиса
+const studentService = new StudentService();
+
 class studentController {/**
     * Получение информации о студенте
     * @param {import('grammy').Context} ctx - Контекст бота
@@ -35,14 +38,12 @@ class studentController {/**
 
     static async handleStart(ctx) {
         try {
-            const {student, created} = await StudentService.registerStudent(ctx.from);
+            const student = await studentService.registerStudent(ctx.from);
 
             const keyboard = keyboardFactory.createMainMenuKeyboard();
 
             await ctx.reply(
-                created
-                    ? '✅ Добро пожаловать! Выберите действие:'
-                    : '👋 С возвращением! Что вас интересует?',
+                '✅ Добро пожаловать! Выберите действие:',
                 { reply_markup: keyboard }
             );
         } catch (error) {
