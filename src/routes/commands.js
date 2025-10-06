@@ -3,23 +3,22 @@ const requireRegistration = require('../middleware/requireRegistration');
 const requireStudentRole = require('../middleware/requireStudentRole');
 
 const StudentController = require('../controllers/studentController');
-const HomeworkController = require('../controllers/homeworkController');
 const CourseController = require("../controllers/courseController");
+const LessonController = require("../controllers/lessonController");
 const ModuleController = require("../controllers/moduleController");
 
 const router = new Composer();
 
 // Обработка callback queries для курсов, модулей и уроков
 router.callbackQuery(/view_course:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery(/view_module:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery(/view_lesson:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
+router.callbackQuery(/view_module:\d+/, requireRegistration(), requireStudentRole(), ModuleController.handleCallbackQuery);
+router.callbackQuery(/view_lesson:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 router.callbackQuery(/courses_page:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery(/back_to_modules:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery(/back_to_lessons:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
+router.callbackQuery(/back_to_modules:\d+/, requireRegistration(), requireStudentRole(), ModuleController.handleCallbackQuery);
+router.callbackQuery(/back_to_lessons:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 router.callbackQuery('back_to_courses', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_main', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_profile', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery('page_info', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 
 // Команды бота
 router.command('start', StudentController.handleStart);

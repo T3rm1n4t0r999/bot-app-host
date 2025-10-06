@@ -1,8 +1,10 @@
 const ModuleService = require("../services/moduleService");
 const KeyboardFactory = require("../services/keyboardFactory");
-
+const CourseController = require("./courseController");
+const LessonService = require("../services/lessonService");
 // Создаем экземпляр сервиса
 const moduleService = new ModuleService();
+const lessonService = new LessonService();
 
 class ModuleController {
     /**
@@ -50,6 +52,73 @@ class ModuleController {
         } catch (error) {
             console.error('Ошибка в getModulesByCourse:', error);
             await ctx.reply('❌ Произошла ошибка при загрузке модулей.');
+        }
+    }
+
+    /**
+     * Показать уроки модуля
+     * @param {import('grammy').Context} ctx - Контекст бота
+     * @param {number} moduleId - ID модуля
+     */
+    static async showModuleLessons(ctx, moduleId) {
+        try {
+            const lessons = await lessonService.getLessonsByModuleId(moduleId);
+
+            if (lessons.length === 0) {
+                await ctx.editMessageText('📚 В данном модуле уроки отсутствуют.');
+                return;
+            }
+
+            const message = '📚 Уроки модуля:';
+            const keyboard = KeyboardFactory.createLessonsKeyboard(lessons, moduleId);
+
+            await ctx.editMessageText(message, { reply_markup: keyboard });
+            await ctx.answerCallbackQuery();
+        } catch (error) {
+            console.error('Ошибка в showModuleLessons:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при загрузке уроков');
+        }
+    }
+
+    /**
+     * Вернуться к модулям курса
+     * @param {import('grammy').Context} ctx - Контекст бота
+     * @param {number} moduleId - ID модуля
+     */
+    static async backToModules(ctx, moduleId) {
+        try {
+            const module = await moduleService.getModuleById(moduleId);
+
+            if (!module) {
+                await ctx.answerCallbackQuery('❌ Модуль не найден');
+                return;
+            }
+
+            await CourseController.showCourseModules(ctx, module.courseId);
+        } catch (error) {
+            console.error('Ошибка в backToModules:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при возврате к модулям');
+        }
+    }
+
+    /**
+     * Обработка callback queries для курсов и модулей
+     * @param {import('grammy').Context} ctx - Контекст бота
+     */
+    static async handleCallbackQuery(ctx) {
+        try {
+            const callbackData = ctx.callbackQuery.data;
+
+            if (callbackData.startsWith('view_module:')) {
+                const moduleId = parseInt(callbackData.split(':')[1]);
+                await ModuleController.showModuleLessons(ctx, moduleId);
+            } else if (callbackData.startsWith('back_to_modules:')) {
+                const moduleId = parseInt(callbackData.split(':')[1]);
+                await ModuleController.backToModules(ctx, moduleId);
+            }
+        } catch (error) {
+            console.error('Ошибка в handleCallbackQuery:', error);
+            await ctx.answerCallbackQuery('❌ Произошла ошибка');
         }
     }
 }
