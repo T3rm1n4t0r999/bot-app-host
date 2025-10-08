@@ -1,8 +1,12 @@
 const LessonRepository = require('../repository/lessonRepository');
+const LearningMaterialsRepository = require('../repository/learningMaterialRepository');
+const LessonAssignmentRepository = require("../repository/lessonAssignmentRepository");
 
 class LessonService {
     constructor() {
         this.lessonRepository = new LessonRepository();
+        this.learningMaterialsRepository = new LearningMaterialsRepository();
+        this.assignmentRepository = new LessonAssignmentRepository();
     }
 
     /**
@@ -194,6 +198,31 @@ class LessonService {
             throw error;
         }
     }
+
+    /**
+     * Получить все обучающие материалы по ID урока
+     * @param {number} lessonId - ID урока
+     * @returns {Promise<Array>}
+     */
+    async getLearningMaterialsByLessonId(lessonId) {
+        try {
+            return await this.learningMaterialsRepository.findByLessonId(lessonId);
+        } catch (error) {
+            console.error('Error getting learning materials by lesson ID:', error);
+            throw new Error(`Failed to get learning materials: ${error.message}`);
+        }
+    }
+
+    async showLessonAssignment(lessonId){
+        try {
+            return await this.assignmentRepository.findByLessonId(lessonId);
+        } catch (e) {
+            console.error('Error getting assignment by lesson ID:', error);
+            throw new Error(`Failed to get assignment: ${error.message}`);
+        }
+    }
+
+
 }
 
 module.exports = LessonService;

@@ -19,6 +19,10 @@ router.callbackQuery(/back_to_lessons:\d+/, requireRegistration(), requireStuden
 router.callbackQuery('back_to_courses', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_main', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_profile', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
+router.callbackQuery(/view_learning_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/view_lesson_assignment:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+
+
 
 // Команды бота
 router.command('start', StudentController.handleStart);

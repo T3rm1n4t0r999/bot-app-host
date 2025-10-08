@@ -1,6 +1,6 @@
-const {sequelize} = require('../database/db');
-const {DataTypes} = require('sequelize');
-
+// models/Lesson.js
+const { sequelize } = require('../database/db');
+const { DataTypes } = require('sequelize');
 
 const Lesson = sequelize.define('Lesson', {
     id: {
@@ -15,9 +15,43 @@ const Lesson = sequelize.define('Lesson', {
             notEmpty: true
         }
     },
-    content: {
+    description: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    // Цели урока
+    objectives: {
+        type: DataTypes.JSONB,
+        allowNull: true
+    },
+    // Предварительные требования
+    prerequisites: {
+        type: DataTypes.JSONB,
+        allowNull: true
+    },
+    // Продолжительность урока (в минутах)
+    duration: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    // Статус публикации (draft, published, archived)
+    status: {
+        type: DataTypes.ENUM('draft', 'published', 'archived'),
+        defaultValue: 'draft'
+    },
+    // Статус выполнения (для конкретного студента)
+    completionStatus: {
+        type: DataTypes.ENUM('not_started', 'in_progress', 'completed'),
+        defaultValue: 'not_started'
+    },
+    // Прогресс выполнения в процентах
+    progress: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        validate: {
+            min: 0,
+            max: 100
+        }
     },
     moduleId: {
         type: DataTypes.INTEGER,
@@ -29,8 +63,7 @@ const Lesson = sequelize.define('Lesson', {
     }
 }, {
     tableName: 'lessons',
-    timestamps: true
+    timestamps: false
 });
-
 
 module.exports = Lesson;

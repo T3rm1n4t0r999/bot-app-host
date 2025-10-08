@@ -115,11 +115,14 @@ class KeyboardFactory {
     /**
      * Создает клавиатуру для урока с кнопкой "Назад к урокам"
      * @param {number} moduleId - ID модуля
+     * @param {number} lessonId
      * @returns {InlineKeyboard}
      */
-    static createLessonNavigationKeyboard(moduleId) {
+    static createLessonNavigationKeyboard(moduleId, lessonId) {
         return new InlineKeyboard()
-            .text('🔙 К урокам', `back_to_lessons:${moduleId}`);
+            .text('🔙 К урокам', `back_to_lessons:${moduleId}`)
+            .text('Обучающие материалы', `view_learning_materials:${lessonId}`)
+            .text('Задания', `view_lesson_assignment:${lessonId}`);
     }
 }
 
