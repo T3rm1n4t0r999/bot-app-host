@@ -49,10 +49,12 @@ const AssignmentQuestion = sequelize.define('AssignmentQuestion', {
             model: 'lesson_assignments',
             key: 'id'
         }
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'assignment_questions',
-    timestamps: true
+    timestamps: false
 });
 
 module.exports = AssignmentQuestion;

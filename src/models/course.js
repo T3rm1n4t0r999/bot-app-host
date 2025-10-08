@@ -18,10 +18,12 @@ const Course = sequelize.define('Course', {
     description: {
         type: DataTypes.TEXT,
         allowNull: true
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'courses',
-    timestamps: true
+    timestamps: false
 });
 
 

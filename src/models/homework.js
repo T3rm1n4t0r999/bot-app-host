@@ -40,10 +40,12 @@ const Homework = sequelize.define('Homework', {
             model: 'lessons',
             key: 'id'
         }
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'homeworks',
-    timestamps: true
+    timestamps: false
 });
 
 module.exports = Homework;

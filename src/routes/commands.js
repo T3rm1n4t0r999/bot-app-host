@@ -26,8 +26,8 @@ router.callbackQuery(/view_lesson_assignment:\d+/, requireRegistration(), requir
 
 // Команды бота
 router.command('start', StudentController.handleStart);
-router.command('profile', requireRegistration(), StudentController.getStudentInfo);
-router.hears('👤 Мой профиль', requireRegistration(), StudentController.getStudentInfo);
+router.command('profile', requireRegistration(), StudentController.showStudentInfo);
+router.hears('👤 Мой профиль', requireRegistration(), StudentController.showStudentInfo);
 
 router.command('course', requireRegistration(), requireStudentRole(), CourseController.getCourses);
 router.hears('📚 Курсы', requireRegistration(), requireStudentRole(), CourseController.getCourses);

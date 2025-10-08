@@ -60,7 +60,9 @@ const Lesson = sequelize.define('Lesson', {
             model: 'modules',
             key: 'id'
         }
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'lessons',
     timestamps: false

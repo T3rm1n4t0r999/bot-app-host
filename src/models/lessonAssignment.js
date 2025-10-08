@@ -51,10 +51,12 @@ const LessonAssignment = sequelize.define('LessonAssignment', {
             model: 'lessons',
             key: 'id'
         }
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'lesson_assignments',
-    timestamps: true
+    timestamps: false
 });
 
 module.exports = LessonAssignment;

@@ -58,10 +58,12 @@ const File = sequelize.define('File', {
     caption: {
         type: DataTypes.TEXT,
         allowNull: true
-    }
+    },
+    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'files',
-    timestamps: true,
+    timestamps: false,
     indexes: [
         {
             fields: ['attachableType', 'attachableId']
