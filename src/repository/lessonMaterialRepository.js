@@ -1,9 +1,9 @@
-// repositories/learningMaterialRepository.js
+// repositories/lessonMaterialRepository.js
 const BaseRepository = require('./baseRepository');
-const LearningMaterial = require('../models/learningMaterial');
+const LearningMaterial = require('../models/lessonMaterial');
 const File = require('../models/file');
 
-class LearningMaterialRepository extends BaseRepository {
+class LessonMaterialRepository extends BaseRepository {
     constructor() {
         super(LearningMaterial);
     }
@@ -164,4 +164,4 @@ class LearningMaterialRepository extends BaseRepository {
     }
 }
 
-module.exports = LearningMaterialRepository;
+module.exports = LessonMaterialRepository;

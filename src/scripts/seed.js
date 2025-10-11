@@ -17,9 +17,9 @@ class DatabaseSeeder {
         this.models.Course = require('../models/course');
         this.models.Module = require('../models/module');
         this.models.Lesson = require('../models/lesson');
-        this.models.LearningMaterial = require('../models/learningMaterial');
-        this.models.LessonAssignment = require('../models/lessonAssignment');
-        this.models.AssignmentQuestion = require('../models/assignmentQuestion');
+        this.models.LearningMaterial = require('../models/lessonMaterial');
+        this.models.LessonAssignment = require('../models/lessonTask');
+        this.models.AssignmentQuestion = require('../models/taskQuestion');
         this.models.File = require('../models/file');
         this.models.StudentProgress = require('../models/studentProgress');
         this.models.StudentCourse = require('../models/studentCourse');
@@ -48,9 +48,9 @@ class DatabaseSeeder {
             await this.initializeModels();
 
             // Очищаем базу (раскомментируйте если нужно)
-             await this.clearDatabase();
+            await this.clearDatabase();
 
-            // Создаем тестовые данные
+            //Создаем тестовые данные
             await this.createCourses();
             await this.createModules();
             await this.createLessons();

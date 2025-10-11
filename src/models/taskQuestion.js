@@ -1,8 +1,8 @@
-// models/AssignmentQuestion.js
+// models/TaskQuestion.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const AssignmentQuestion = sequelize.define('AssignmentQuestion', {
+const TaskQuestion = sequelize.define('AssignmentQuestion', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -57,4 +57,4 @@ const AssignmentQuestion = sequelize.define('AssignmentQuestion', {
     timestamps: false
 });
 
-module.exports = AssignmentQuestion;
+module.exports = TaskQuestion;

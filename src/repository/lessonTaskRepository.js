@@ -1,11 +1,11 @@
-// repositories/lessonAssignmentRepository.js
+// repositories/lessonTaskRepository.js
 const BaseRepository = require('./baseRepository');
-const LessonAssignment = require('../models/lessonAssignment');
-const AssignmentQuestion = require('../models/assignmentQuestion');
+const LessonAssignment = require('../models/lessonTask');
+const AssignmentQuestion = require('../models/taskQuestion');
 const File = require('../models/file');
 const StudentProgress = require('../models/studentProgress');
 
-class LessonAssignmentRepository extends BaseRepository {
+class LessonTaskRepository extends BaseRepository {
     constructor() {
         super(LessonAssignment);
     }
@@ -421,4 +421,4 @@ class LessonAssignmentRepository extends BaseRepository {
     }
 }
 
-module.exports = LessonAssignmentRepository;
+module.exports = LessonTaskRepository;

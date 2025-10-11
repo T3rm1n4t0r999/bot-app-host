@@ -1,8 +1,8 @@
-// models/LessonAssignment.js
+// models/LessonTask.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const LessonAssignment = sequelize.define('LessonAssignment', {
+const LessonTask = sequelize.define('LessonAssignment', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -59,4 +59,4 @@ const LessonAssignment = sequelize.define('LessonAssignment', {
     timestamps: false
 });
 
-module.exports = LessonAssignment;
+module.exports = LessonTask;

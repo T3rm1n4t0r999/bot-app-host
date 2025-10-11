@@ -2,6 +2,7 @@ const KeyboardFactory = require("../services/keyboardFactory");
 const LessonService = require("../services/lessonService");
 const ModuleController = require("../controllers/ModuleController");
 const {InlineKeyboard} = require("grammy");
+const CourseController = require("./courseController");
 
 const lessonService = new LessonService();
 
@@ -72,6 +73,12 @@ class LessonController {
             }else if (callbackData.startsWith('view_lesson_assignment:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.showLessonAssignment(ctx, lessonId);
+            }else if (callbackData.startsWith('view_material:')) {
+                const lessonId = parseInt(callbackData.split(':')[1]);
+                await LessonController.showLessonMaterial(ctx, lessonId);
+            }else if(callbackData.startsWith('back_to_materials:')) {
+                const lessonId = parseInt(callbackData.split(':')[1]);
+                await LessonController.backToMaterials(ctx, lessonId);
             }
         } catch (error) {
             console.error('Ошибка в handleCallbackQuery:', error);
@@ -106,11 +113,13 @@ class LessonController {
         }
     }
 
+
+
     static async showLearningMaterials(ctx, lessonId) {
         try {
             // Получаем материалы урока
             const materials = await lessonService.getLearningMaterialsByLessonId(lessonId);
-            const keyboard = new InlineKeyboard().text('🔙 К уроку', `view_lesson:${lessonId}`);
+            const keyboard = new InlineKeyboard();
             if (!materials || materials.length === 0) {
                 await ctx.reply('📚 В этом уроке пока нет обучающих материалов.');
                 return;
@@ -120,18 +129,12 @@ class LessonController {
             const sortedMaterials = materials.sort((a, b) => a.order - b.order);
 
             // Формируем сообщение с названиями материалов
-            let message = '📚 Обучающие материалы урока:\n\n';
+            let message = `📚 Обучающие материалы урока:`;
 
             sortedMaterials.forEach((material, index) => {
-
-                message += `${index + 1}. ${material.title}\n`;
-
-                // Добавляем разделитель между материалами
-                if (index < sortedMaterials.length - 1) {
-                    message += '\n';
-                }
+                keyboard.text(material.title, `view_material:${material.id}`).row();
             });
-
+            keyboard.text('🔙 К уроку', `view_lesson:${lessonId}`).row();
             // Отправляем основное сообщение со списком материалов
             await ctx.editMessageText(message, {
                 reply_markup: keyboard,
@@ -144,6 +147,34 @@ class LessonController {
         }
     }
 
+    static async showLessonMaterial(ctx, materialId) {
+        try {
+            const material = await lessonService.getMaterialById(materialId);
+            let message = `Название урока: ${material.title}\nОписание урока: ${material.content}`;
+            const keyboard = new InlineKeyboard().text('К материалам', `back_to_materials:${material.lessonId}`).row();
+            await ctx.editMessageText(message, {
+                reply_markup: keyboard,
+                parse_mode: 'Markdown'
+            });
+            await ctx.answerCallbackQuery();
+        } catch (e) {
+        }
+    }
+
+    static async backToMaterials(ctx, lessonId) {
+        try {
+            const lesson = await lessonService.getLessonById(lessonId);
+            if (!lesson) {
+                await ctx.answerCallbackQuery('❌ Урок не найден');
+                return;
+            }
+
+            await LessonController.showLearningMaterials(ctx, lessonId);
+        } catch (error) {
+            console.error('Ошибка в backToMaterials:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при возврате к модулям');
+        }
+    }
 }
 
 module.exports = LessonController;

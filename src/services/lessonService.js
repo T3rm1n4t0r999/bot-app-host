@@ -1,6 +1,6 @@
 const LessonRepository = require('../repository/lessonRepository');
-const LearningMaterialsRepository = require('../repository/learningMaterialRepository');
-const LessonAssignmentRepository = require("../repository/lessonAssignmentRepository");
+const LearningMaterialsRepository = require('../repository/lessonMaterialRepository');
+const LessonAssignmentRepository = require("../repository/lessonTaskRepository");
 
 class LessonService {
     constructor() {
@@ -23,7 +23,13 @@ class LessonService {
             throw error;
         }
     }
-
+    async getMaterialById(materialId, options = {}) {
+        try {
+            return await this.learningMaterialsRepository.findById(materialId, options);
+        } catch (e) {
+            console.error('Error getting material by material ID');
+        }
+    }
     /**
      * Получить урок по ID
      * @param {number} lessonId - ID урока

@@ -1,8 +1,8 @@
-// models/LearningMaterial.js
+// models/LessonMaterial.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const LearningMaterial = sequelize.define('LearningMaterial', {
+const LessonMaterial = sequelize.define('LearningMaterial', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -44,4 +44,4 @@ const LearningMaterial = sequelize.define('LearningMaterial', {
     timestamps: false
 });
 
-module.exports = LearningMaterial;
+module.exports = LessonMaterial;
