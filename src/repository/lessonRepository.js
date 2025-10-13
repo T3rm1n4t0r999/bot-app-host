@@ -181,7 +181,6 @@ class LessonRepository extends BaseRepository {
             throw error;
         }
     }
-
 }
 
 module.exports = LessonRepository;

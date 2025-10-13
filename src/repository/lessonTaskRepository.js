@@ -1,13 +1,12 @@
 // repositories/lessonTaskRepository.js
 const BaseRepository = require('./baseRepository');
-const LessonAssignment = require('../models/lessonTask');
-const AssignmentQuestion = require('../models/taskQuestion');
+const LessonTask = require('../models/lessonTask');
 const File = require('../models/file');
 const StudentProgress = require('../models/studentProgress');
 
 class LessonTaskRepository extends BaseRepository {
     constructor() {
-        super(LessonAssignment);
+        super(LessonTask);
     }
 
     /**
@@ -419,6 +418,7 @@ class LessonTaskRepository extends BaseRepository {
             throw error;
         }
     }
+
 }
 
 module.exports = LessonTaskRepository;

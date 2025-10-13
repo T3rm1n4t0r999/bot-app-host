@@ -1,12 +1,14 @@
 const LessonRepository = require('../repository/lessonRepository');
-const LearningMaterialsRepository = require('../repository/lessonMaterialRepository');
-const LessonAssignmentRepository = require("../repository/lessonTaskRepository");
+const LessonMaterialRepository = require('../repository/lessonMaterialRepository');
+const LessonTaskRepository = require("../repository/lessonTaskRepository");
+const TaskQuestionRepository = require("../repository/taskQuestionRepository");
 
 class LessonService {
     constructor() {
         this.lessonRepository = new LessonRepository();
-        this.learningMaterialsRepository = new LearningMaterialsRepository();
-        this.assignmentRepository = new LessonAssignmentRepository();
+        this.lessonMaterialRepository = new LessonMaterialRepository();
+        this.lessonTaskRepository = new LessonTaskRepository();
+        this.taskQuestionRepository = new TaskQuestionRepository();
     }
 
     /**
@@ -25,7 +27,7 @@ class LessonService {
     }
     async getMaterialById(materialId, options = {}) {
         try {
-            return await this.learningMaterialsRepository.findById(materialId, options);
+            return await this.lessonMaterialRepository.findById(materialId, options);
         } catch (e) {
             console.error('Error getting material by material ID');
         }
@@ -210,25 +212,33 @@ class LessonService {
      * @param {number} lessonId - ID урока
      * @returns {Promise<Array>}
      */
-    async getLearningMaterialsByLessonId(lessonId) {
+    async getLessonMaterialsByLessonId(lessonId) {
         try {
-            return await this.learningMaterialsRepository.findByLessonId(lessonId);
+            return await this.lessonMaterialRepository.findByLessonId(lessonId);
         } catch (error) {
             console.error('Error getting learning materials by lesson ID:', error);
             throw new Error(`Failed to get learning materials: ${error.message}`);
         }
     }
 
-    async showLessonAssignment(lessonId){
+    async showLessonTask(lessonId){
         try {
-            return await this.assignmentRepository.findByLessonId(lessonId);
+            return await this.lessonTaskRepository.findByLessonId(lessonId);
         } catch (e) {
             console.error('Error getting assignment by lesson ID:', error);
-            throw new Error(`Failed to get assignment: ${error.message}`);
+            throw new Error(`Failed to get assignment: ${e.message}`);
         }
     }
 
+    async getTaskQuestionsByLessonTaskId(lessonTaskId) {
+        try {
+            return await this.taskQuestionRepository.findByLessonTaskId(lessonTaskId);
+        } catch (e) {
+            console.log("Error getting task questions");
+            throw new Error(`Failed to get qestions: ${e.message}`);
+        }
 
+    }
 }
 
 module.exports = LessonService;

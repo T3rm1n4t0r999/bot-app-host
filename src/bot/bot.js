@@ -18,14 +18,7 @@ async function createBot(token) {
     const proxyUrl = process.env.SOCKS_PROXY;
     const agent = new SocksProxyAgent(proxyUrl);
 
-    const bot = new Bot(process.env.BOT_TOKEN, {
-        client: {
-            baseFetchConfig: {
-                agent: agent,
-                compress: true
-            }
-        }
-    });
+    const bot = new Bot(process.env.BOT_TOKEN);
 
     bot.use(mainRoutes);
 

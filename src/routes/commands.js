@@ -19,17 +19,17 @@ router.callbackQuery(/back_to_lessons:\d+/, requireRegistration(), requireStuden
 router.callbackQuery('back_to_courses', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_main', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_profile', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
-router.callbackQuery(/view_learning_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
-router.callbackQuery(/view_lesson_assignment:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
-router.callbackQuery(/view_material:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
-router.callbackQuery(/back_to_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/view_lesson_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/view_lesson_task:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/view_lesson_material:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/back_to_lesson_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 
 
 
 // Команды бота
 router.command('start', StudentController.handleStart);
-router.command('profile', requireRegistration(), StudentController.showStudentInfo);
-router.hears('👤 Мой профиль', requireRegistration(), StudentController.showStudentInfo);
+router.command('profile', requireRegistration(), StudentController.getStudentInfo);
+router.hears('👤 Мой профиль', requireRegistration(), StudentController.getStudentInfo);
 
 router.command('course', requireRegistration(), requireStudentRole(), CourseController.getCourses);
 router.hears('📚 Курсы', requireRegistration(), requireStudentRole(), CourseController.getCourses);

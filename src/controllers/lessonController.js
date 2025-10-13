@@ -67,16 +67,16 @@ class LessonController {
             } else if (callbackData.startsWith('back_to_lessons:')) {
                 const moduleId = parseInt(callbackData.split(':')[1]);
                 await LessonController.backToLessons(ctx, moduleId);
-            }else if (callbackData.startsWith('view_learning_materials:')) {
+            }else if (callbackData.startsWith('view_lesson_materials:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.showLearningMaterials(ctx, lessonId);
-            }else if (callbackData.startsWith('view_lesson_assignment:')) {
+            }else if (callbackData.startsWith('view_lesson_task:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.showLessonAssignment(ctx, lessonId);
-            }else if (callbackData.startsWith('view_material:')) {
+            }else if (callbackData.startsWith('view_lesson_material:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.showLessonMaterial(ctx, lessonId);
-            }else if(callbackData.startsWith('back_to_materials:')) {
+            }else if(callbackData.startsWith('back_to_lesson_materials:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.backToMaterials(ctx, lessonId);
             }
@@ -86,9 +86,9 @@ class LessonController {
         }
     }
 
-    static async showLessonAssignment(ctx, lessonId) {
+    static async showLessonTask(ctx, lessonId) {
         try {
-            const assignments = await lessonService.showLessonAssignment(lessonId);
+            const assignments = await lessonService.showLessonTask(lessonId);
             const keyboard = new InlineKeyboard().text('🔙 К уроку', `view_lesson:${lessonId}`);
             if (!assignments || assignments.length === 0) {
                 await ctx.reply('📚 В этом уроке пока нет заданий.');
@@ -115,10 +115,10 @@ class LessonController {
 
 
 
-    static async showLearningMaterials(ctx, lessonId) {
+    static async showLessonMaterials(ctx, lessonId) {
         try {
             // Получаем материалы урока
-            const materials = await lessonService.getLearningMaterialsByLessonId(lessonId);
+            const materials = await lessonService.getLessonMaterialsByLessonId(lessonId);
             const keyboard = new InlineKeyboard();
             if (!materials || materials.length === 0) {
                 await ctx.reply('📚 В этом уроке пока нет обучающих материалов.');
@@ -161,6 +161,20 @@ class LessonController {
         }
     }
 
+    static async showTaskQuestions(ctx, lessonTaskId) {
+
+        try {
+            const taskQuestions = await lessonService.getTaskQuestionsByLessonTaskId(lessonTaskId);
+            if(!taskQuestions || taskQuestions.length === 0) {
+                await ctx.answerCallbackQuery('Вопросов нет');
+                return;
+            }
+
+        } catch (e) {
+        }
+
+    }
+
     static async backToMaterials(ctx, lessonId) {
         try {
             const lesson = await lessonService.getLessonById(lessonId);
@@ -169,7 +183,7 @@ class LessonController {
                 return;
             }
 
-            await LessonController.showLearningMaterials(ctx, lessonId);
+            await LessonController.showLessonMaterials(ctx, lessonId);
         } catch (error) {
             console.error('Ошибка в backToMaterials:', error);
             await ctx.answerCallbackQuery('❌ Ошибка при возврате к модулям');
