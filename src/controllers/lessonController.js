@@ -74,10 +74,17 @@ class LessonController {
             }else if (callbackData.startsWith('view_lesson_task:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.showLessonTask(ctx, lessonId);
-            }else if (callbackData.startsWith('view_lesson_material:')) {
+            } else if (callbackData.startsWith('view_lesson_material:')) {
+                const materialId = parseInt(callbackData.split(':')[1]);
+                await LessonController.showLessonMaterial(ctx, materialId);
+            } else if(callbackData.startsWith('back_to_lesson_materials:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
-                await LessonController.showLessonMaterial(ctx, lessonId);
-            }else if(callbackData.startsWith('back_to_lesson_materials:')) {
+                await LessonController.backToMaterials(ctx, lessonId);
+            } else if (callbackData.startsWith('view_material:')) {
+                // Поддержка альтернативного callback из старой клавиатуры
+                const materialId = parseInt(callbackData.split(':')[1]);
+                await LessonController.showLessonMaterial(ctx, materialId);
+            } else if(callbackData.startsWith('back_to_materials:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonController.backToMaterials(ctx, lessonId);
             }else if (callbackData.startsWith('view_task_questions:')) {

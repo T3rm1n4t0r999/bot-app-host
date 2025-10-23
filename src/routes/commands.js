@@ -26,6 +26,23 @@ router.callbackQuery(/back_to_lesson_materials:\d+/, requireRegistration(), requ
 router.callbackQuery(/view_task_questions:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 router.callbackQuery(/view_task_question:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 
+// Дополнительные callback-и для материалов урока (устаревшие алиасы для совместимости)
+router.callbackQuery(/view_material:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/back_to_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+
+// Кнопки внутри заданий/вопросов
+router.callbackQuery(/toggle_multi:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/select_single:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/await_text:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/nav_question:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/finish_task:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/show_progress:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/restart_task:/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/back_to_tasks/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+
+// Служебная кнопка-индикатор страницы
+router.callbackQuery('page_info', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
+
 
 // Команды бота
 router.command('start', StudentController.handleStart);
@@ -40,5 +57,11 @@ router.command('modules', requireRegistration(), requireStudentRole(), ModuleCon
 
 // router.command('homework',requireRegistration(), requireStudentRole(), HomeworkController.getHomework)
 // router.hears('📝 Домашние задания', requireRegistration(), requireStudentRole(), HomeworkController.getHomework);
+
+// Обработка текстового ответа пользователя для вопросов (если ожидается текст)
+router.on('message:text', requireRegistration(), requireStudentRole(), async (ctx, next) => {
+    const handled = await LessonController.handleTextAnswer(ctx);
+    if (!handled) return next();
+});
 
 module.exports = router; 

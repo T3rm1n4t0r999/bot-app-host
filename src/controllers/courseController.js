@@ -75,6 +75,10 @@ class CourseController {
                 await CourseController.showCourses(ctx, 1);
             } else if (callbackData === 'back_to_profile') {
                 await CourseController.showStudentProfile(ctx);
+            } else if (callbackData === 'page_info') {
+                // Просто закрываем всплывающее уведомление, без изменения сообщения
+                await ctx.answerCallbackQuery('Это номер страницы');
+                return;
             }
         } catch (error) {
             console.error('Ошибка в handleCallbackQuery:', error);
