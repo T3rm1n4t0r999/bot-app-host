@@ -1,15 +1,15 @@
-import BaseRepository from "./baseRepository";
-import TaskQuestion from "../models/taskQuestion";
+const BaseRepository = require('./baseRepository');
+const TaskQuestion = require('../models/taskQuestion');
 
 class taskQuestionRepository extends BaseRepository {
     constructor() {
         super(TaskQuestion);
     }
 
-    async findByLessonTaskId(lessonTaskId, options = {}) {
+    async findByLessonTaskId(taskId, options = {}) {
         try {
             return await this.findByCondition(
-                { lessonTaskId },
+                { taskId },
                 {
                     order: [['id', 'ASC']],
                 }
@@ -20,6 +20,7 @@ class taskQuestionRepository extends BaseRepository {
         }
 
     }
+
 }
 
 module.exports = taskQuestionRepository;

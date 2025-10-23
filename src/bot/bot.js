@@ -3,11 +3,14 @@ const mainRoutes = require('../routes/commands');
 const {sequelize} = require('../database/db');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const {setupAssociations} = require("../models");
+const RedisService = require('../services/redisService');
+
 async function createBot(token) {
     // Проверка подключения к БД
     try {
         await sequelize.authenticate();
         console.log('Подключение к БД успешно');
+        await RedisService.connect();
         setupAssociations();
         await sequelize.sync(false);
     } catch (error) {

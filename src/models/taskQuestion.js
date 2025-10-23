@@ -2,7 +2,7 @@
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const TaskQuestion = sequelize.define('AssignmentQuestion', {
+const TaskQuestion = sequelize.define('TaskQuestion', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -42,18 +42,18 @@ const TaskQuestion = sequelize.define('AssignmentQuestion', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
-    assignmentId: {
+    taskId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'lesson_assignments',
+            model: 'lesson_task',
             key: 'id'
         }
     },
     created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
     updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
-    tableName: 'assignment_questions',
+    tableName: 'task_questions',
     timestamps: false
 });
 

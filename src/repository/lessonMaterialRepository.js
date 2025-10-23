@@ -1,11 +1,11 @@
 // repositories/lessonMaterialRepository.js
 const BaseRepository = require('./baseRepository');
-const LearningMaterial = require('../models/lessonMaterial');
+const LessonMaterial = require('../models/lessonMaterial');
 const File = require('../models/file');
 
 class LessonMaterialRepository extends BaseRepository {
     constructor() {
-        super(LearningMaterial);
+        super(LessonMaterial);
     }
 
     /**
@@ -24,7 +24,7 @@ class LessonMaterialRepository extends BaseRepository {
             );
 
         } catch (error) {
-            console.error('Error finding learning materials by lesson ID:', error);
+            console.error('Error finding lesson materials by lesson ID:', error);
             throw error;
         }
     }
@@ -48,7 +48,7 @@ class LessonMaterialRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding learning materials with files:', error);
+            console.error('Error finding lesson materials with files:', error);
             throw error;
         }
     }
@@ -73,7 +73,7 @@ class LessonMaterialRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding learning materials by type:', error);
+            console.error('Error finding lesson materials by type:', error);
             throw error;
         }
     }
@@ -87,7 +87,7 @@ class LessonMaterialRepository extends BaseRepository {
         try {
             return await this.count({ lessonId });
         } catch (error) {
-            console.error('Error counting learning materials by lesson ID:', error);
+            console.error('Error counting lesson materials by lesson ID:', error);
             throw error;
         }
     }
@@ -115,7 +115,7 @@ class LessonMaterialRepository extends BaseRepository {
             });
 
             return {
-                learningMaterials: rows,
+                lessonMaterials: rows,
                 totalCount: count,
                 totalPages: Math.ceil(count / limit),
                 currentPage: page,
@@ -123,7 +123,7 @@ class LessonMaterialRepository extends BaseRepository {
                 hasPrevPage: page > 1
             };
         } catch (error) {
-            console.error('Error finding paginated learning materials:', error);
+            console.error('Error finding paginated lesson materials:', error);
             throw error;
         }
     }
@@ -138,7 +138,7 @@ class LessonMaterialRepository extends BaseRepository {
         try {
             return await this.update(materialId, { order: newOrder });
         } catch (error) {
-            console.error('Error updating learning material order:', error);
+            console.error('Error updating lesson material order:', error);
             throw error;
         }
     }
@@ -158,7 +158,7 @@ class LessonMaterialRepository extends BaseRepository {
 
             return lastMaterial ? lastMaterial.order + 1 : 0;
         } catch (error) {
-            console.error('Error getting next order for learning material:', error);
+            console.error('Error getting next order for lesson material:', error);
             throw error;
         }
     }

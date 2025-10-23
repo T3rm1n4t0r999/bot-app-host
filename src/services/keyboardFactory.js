@@ -121,8 +121,72 @@ class KeyboardFactory {
     static createLessonNavigationKeyboard(moduleId, lessonId) {
         return new InlineKeyboard()
             .text('🔙 К урокам', `back_to_lessons:${moduleId}`)
-            .text('Обучающие материалы', `view_learning_materials:${lessonId}`)
-            .text('Задания', `view_lesson_assignment:${lessonId}`);
+            .text('Обучающие материалы', `view_lesson_materials:${lessonId}`)
+            .text('Задания', `view_lesson_task:${lessonId}`);
+    }
+
+    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions, userId) {
+        const keyboard = new InlineKeyboard();
+        const options = typeof taskQuestion.options === 'string'
+            ? JSON.parse(taskQuestion.options)
+            : taskQuestion.options;
+
+        // Добавляем варианты ответа
+        switch (taskQuestion.questionType) {
+            case "multiple_choice":
+                taskQuestion.userAnswer.forEach((optionIndex) => {
+                    const isSelected = taskQuestion.userAnswer.includes(optionIndex);
+                    const icon = isSelected ? "✅" : "◻️";
+                    keyboard.text(`${icon} ${options[optionIndex]}`, `toggle_multi:${taskQuestion.id}:${optionIndex}:${taskId}`);
+                });
+                break;
+
+            case "single_choice":
+                options.forEach((option, index) => {
+                    const isSelected = taskQuestion.userAnswer === index;
+                    const icon = isSelected ? "🔘" : "⚪";
+                    keyboard.text(`${icon} ${option}`, `select_single:${taskQuestion.id}:${index}:${taskId}`);
+                });
+                break;
+        }
+
+        // Навигация
+        keyboard.row();
+        if (currentIndex > 0) {
+            keyboard.text('« Предыдущий', `nav_question:${taskId}:${currentIndex - 1}`);
+        }
+
+        if (currentIndex < totalQuestions - 1) {
+            keyboard.text('Следующий »', `nav_question:${taskId}:${currentIndex + 1}`);
+        } else {
+            keyboard.text('✅ Завершить задание', `finish_task:${taskId}`);
+        }
+
+        // Дополнительные кнопки
+        keyboard.row();
+        keyboard.text('📊 Прогресс', `show_progress:${taskId}`);
+        keyboard.text('🔁 Начать заново', `restart_task:${taskId}`);
+
+        return keyboard;
+    }
+
+    /**
+     * Клавиатура для результатов
+     */
+    static createResultsKeyboard(taskId) {
+        return new InlineKeyboard()
+            .text('🔄 Пройти заново', `restart_task:${taskId}`)
+            .text('📋 К списку заданий', 'back_to_tasks')
+            .row();
+    }
+
+    /**
+     * Клавиатура для прогресса
+     */
+    static createProgressKeyboard(taskId, currentIndex) {
+        return new InlineKeyboard()
+            .text('↩️ Назад к вопросу', `nav_question:${taskId}:${currentIndex}`)
+            .row();
     }
 }
 

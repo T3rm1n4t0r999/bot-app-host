@@ -2,7 +2,7 @@
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const LessonMaterial = sequelize.define('LearningMaterial', {
+const LessonMaterial = sequelize.define('LessonMaterial', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -40,7 +40,7 @@ const LessonMaterial = sequelize.define('LearningMaterial', {
     created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
     updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
-    tableName: 'learning_materials',
+    tableName: 'lesson_materials',
     timestamps: false
 });
 

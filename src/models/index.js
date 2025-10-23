@@ -3,9 +3,9 @@ const sequelize = require('../database/db');
 const Course = require('./course');
 const Module = require('./module');
 const Lesson = require('./lesson');
-const LearningMaterial = require('./lessonMaterial');
-const LessonAssignment = require('./lessonTask');
-const AssignmentQuestion = require('./taskQuestion');
+const LessonMaterial = require('./lessonMaterial');
+const LessonTask = require('./lessonTask');
+const TaskQuestion = require('./taskQuestion');
 const Homework = require('./homework');
 const StudentProgress = require('./studentProgress');
 const File = require('./file');
@@ -35,40 +35,40 @@ function setupAssociations() {
         as: 'module'
     });
 
-    // Lesson -> LearningMaterial (один ко многим)
-    Lesson.hasMany(LearningMaterial, {
+    // Lesson -> LessonMaterial (один ко многим)
+    Lesson.hasMany(LessonMaterial, {
         foreignKey: 'lessonId',
-        as: 'learningMaterials',
+        as: 'lessonMaterials',
         onDelete: 'CASCADE'
     });
 
-    LearningMaterial.belongsTo(Lesson, {
+    LessonMaterial.belongsTo(Lesson, {
         foreignKey: 'lessonId',
         as: 'lesson'
     });
 
-    // Lesson -> LessonAssignment (один к одному или один ко многим)
-    Lesson.hasMany(LessonAssignment, {
+    // Lesson -> LessonTask (один к одному или один ко многим)
+    Lesson.hasMany(LessonTask, {
         foreignKey: 'lessonId',
-        as: 'assignments',
+        as: 'task',
         onDelete: 'CASCADE'
     });
 
-    LessonAssignment.belongsTo(Lesson, {
+    LessonTask.belongsTo(Lesson, {
         foreignKey: 'lessonId',
         as: 'lesson'
     });
 
-    // LessonAssignment -> AssignmentQuestion (один ко многим)
-    LessonAssignment.hasMany(AssignmentQuestion, {
-        foreignKey: 'assignmentId',
+    // LessonTask -> TaskQuestion (один ко многим)
+    LessonTask.hasMany(TaskQuestion, {
+        foreignKey: 'taskId',
         as: 'questions',
         onDelete: 'CASCADE'
     });
 
-    AssignmentQuestion.belongsTo(LessonAssignment, {
-        foreignKey: 'assignmentId',
-        as: 'assignment'
+    TaskQuestion.belongsTo(LessonTask, {
+        foreignKey: 'taskId',
+        as: 'task'
     });
 
     // Lesson -> Homework (один ко многим)
@@ -85,36 +85,36 @@ function setupAssociations() {
 
     // Полиморфные ассоциации для файлов
 
-    // Файлы для LearningMaterial
-    LearningMaterial.hasMany(File, {
+    // Файлы для LessonMaterial
+    LessonMaterial.hasMany(File, {
         foreignKey: 'attachableId',
         constraints: false,
         scope: {
-            attachableType: 'LearningMaterial'
+            attachableType: 'lessonMaterial'
         },
         as: 'files'
     });
 
-    File.belongsTo(LearningMaterial, {
+    File.belongsTo(LessonMaterial, {
         foreignKey: 'attachableId',
         constraints: false,
-        as: 'learningMaterial'
+        as: 'lessonMaterial'
     });
 
-    // Файлы для LessonAssignment
-    LessonAssignment.hasMany(File, {
+    // Файлы для LessonTask
+    LessonTask.hasMany(File, {
         foreignKey: 'attachableId',
         constraints: false,
         scope: {
-            attachableType: 'LessonAssignment'
+            attachableType: 'LessonTask'
         },
         as: 'files'
     });
 
-    File.belongsTo(LessonAssignment, {
+    File.belongsTo(LessonTask, {
         foreignKey: 'attachableId',
         constraints: false,
-        as: 'lessonAssignment'
+        as: 'lessonTask'
     });
 
     // Файлы для Homework
@@ -133,20 +133,20 @@ function setupAssociations() {
         as: 'homework'
     });
 
-    // Файлы для AssignmentQuestion
-    AssignmentQuestion.hasMany(File, {
+    // Файлы для TaskQuestion
+    TaskQuestion.hasMany(File, {
         foreignKey: 'attachableId',
         constraints: false,
         scope: {
-            attachableType: 'AssignmentQuestion'
+            attachableType: 'taskQuestion'
         },
         as: 'files'
     });
 
-    File.belongsTo(AssignmentQuestion, {
+    File.belongsTo(TaskQuestion, {
         foreignKey: 'attachableId',
         constraints: false,
-        as: 'assignmentQuestion'
+        as: 'taskQuestion'
     });
 
     // Student associations
@@ -184,28 +184,28 @@ function setupAssociations() {
         as: 'student'
     });
 
-    LessonAssignment.hasMany(StudentProgress, {
-        foreignKey: 'assignmentId',
+    LessonTask.hasMany(StudentProgress, {
+        foreignKey: 'taskId',
         as: 'studentProgress',
         onDelete: 'CASCADE'
     });
 
-    StudentProgress.belongsTo(LessonAssignment, {
-        foreignKey: 'assignmentId',
-        as: 'assignment'
+    StudentProgress.belongsTo(LessonTask, {
+        foreignKey: 'taskId',
+        as: 'task'
     });
 
     // Дополнительные ассоциации для удобства
-    Student.belongsToMany(LessonAssignment, {
+    Student.belongsToMany(LessonTask, {
         through: StudentProgress,
         foreignKey: 'studentId',
-        otherKey: 'assignmentId',
-        as: 'assignmentsProgress'
+        otherKey: 'taskId',
+        as: 'tasksProgress'
     });
 
-    LessonAssignment.belongsToMany(Student, {
+    LessonTask.belongsToMany(Student, {
         through: StudentProgress,
-        foreignKey: 'assignmentId',
+        foreignKey: 'taskId',
         otherKey: 'studentId',
         as: 'studentsProgress'
     });
@@ -216,9 +216,9 @@ module.exports = {
     Course,
     Module,
     Lesson,
-    LearningMaterial,
-    LessonAssignment,
-    AssignmentQuestion,
+    LessonMaterial,
+    LessonTask,
+    TaskQuestion,
     Homework,
     StudentProgress,
     File,

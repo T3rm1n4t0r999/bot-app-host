@@ -216,8 +216,8 @@ class LessonService {
         try {
             return await this.lessonMaterialRepository.findByLessonId(lessonId);
         } catch (error) {
-            console.error('Error getting learning materials by lesson ID:', error);
-            throw new Error(`Failed to get learning materials: ${error.message}`);
+            console.error('Error getting lesson materials by lesson ID:', error);
+            throw new Error(`Failed to get lesson materials: ${error.message}`);
         }
     }
 
@@ -225,8 +225,8 @@ class LessonService {
         try {
             return await this.lessonTaskRepository.findByLessonId(lessonId);
         } catch (e) {
-            console.error('Error getting assignment by lesson ID:', error);
-            throw new Error(`Failed to get assignment: ${e.message}`);
+            console.error('Error getting task by lesson ID:', error);
+            throw new Error(`Failed to get task: ${e.message}`);
         }
     }
 
@@ -238,6 +238,24 @@ class LessonService {
             throw new Error(`Failed to get qestions: ${e.message}`);
         }
 
+    }
+
+    async getLessonByLessonTaskId(lessonTaskId) {
+        try {
+            return await this.lessonTaskRepository.findById(lessonTaskId);
+        } catch (e) {
+            console.error('Error getting task questions');
+            throw new Error(`Failed to get qestions: ${e.message}`);
+        }
+    }
+
+    async getTaskQuestionById(taskQuestionId) {
+        try {
+            return await this.taskQuestionRepository.findById(taskQuestionId);
+        } catch (e) {
+            console.error('Error getting question')
+            throw new Error(`Failed to get task: ${e.message}`);
+        }
     }
 }
 

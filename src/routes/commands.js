@@ -23,7 +23,8 @@ router.callbackQuery(/view_lesson_materials:\d+/, requireRegistration(), require
 router.callbackQuery(/view_lesson_task:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 router.callbackQuery(/view_lesson_material:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 router.callbackQuery(/back_to_lesson_materials:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
-
+router.callbackQuery(/view_task_questions:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
+router.callbackQuery(/view_task_question:\d+/, requireRegistration(), requireStudentRole(), LessonController.handleCallbackQuery);
 
 
 // Команды бота

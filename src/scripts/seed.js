@@ -6,8 +6,8 @@ class DatabaseSeeder {
         this.courses = [];
         this.modules = [];
         this.lessons = [];
-        this.learningMaterials = [];
-        this.assignments = [];
+        this.lessonMaterials = [];
+        this.tasks = [];
         this.questions = [];
         this.models = {};
     }
@@ -17,9 +17,9 @@ class DatabaseSeeder {
         this.models.Course = require('../models/course');
         this.models.Module = require('../models/module');
         this.models.Lesson = require('../models/lesson');
-        this.models.LearningMaterial = require('../models/lessonMaterial');
-        this.models.LessonAssignment = require('../models/lessonTask');
-        this.models.AssignmentQuestion = require('../models/taskQuestion');
+        this.models.LessonMaterial = require('../models/lessonMaterial');
+        this.models.LessonTask = require('../models/lessonTask');
+        this.models.TaskQuestion = require('../models/taskQuestion');
         this.models.File = require('../models/file');
         this.models.StudentProgress = require('../models/studentProgress');
         this.models.StudentCourse = require('../models/studentCourse');
@@ -54,9 +54,9 @@ class DatabaseSeeder {
             await this.createCourses();
             await this.createModules();
             await this.createLessons();
-            await this.createLearningMaterials();
-            await this.createAssignments();
-            await this.createAssignmentQuestions();
+            await this.createLessonMaterials();
+            await this.createTasks();
+            await this.createTaskQuestions();
             await this.addCoursesToStudent();
 
             console.log('✅ База данных успешно заполнена тестовыми данными!');
@@ -64,8 +64,8 @@ class DatabaseSeeder {
             console.log(`   - Курсов: ${this.courses.length}`);
             console.log(`   - Модулей: ${this.modules.length}`);
             console.log(`   - Уроков: ${this.lessons.length}`);
-            console.log(`   - Материалов: ${this.learningMaterials.length}`);
-            console.log(`   - Заданий: ${this.assignments.length}`);
+            console.log(`   - Материалов: ${this.lessonMaterials.length}`);
+            console.log(`   - Заданий: ${this.tasks.length}`);
             console.log(`   - Вопросов: ${this.questions.length}`);
 
         } catch (error) {
@@ -80,10 +80,10 @@ class DatabaseSeeder {
 
         // Удаляем данные в правильном порядке (с учетом foreign keys)
         await this.models.StudentProgress.destroy({ where: {}, force: true });
-        await this.models.AssignmentQuestion.destroy({ where: {}, force: true });
-        await this.models.LessonAssignment.destroy({ where: {}, force: true });
+        await this.models.TaskQuestion.destroy({ where: {}, force: true });
+        await this.models.LessonTask.destroy({ where: {}, force: true });
         await this.models.File.destroy({ where: {}, force: true });
-        await this.models.LearningMaterial.destroy({ where: {}, force: true });
+        await this.models.LessonMaterial.destroy({ where: {}, force: true });
         await this.models.Lesson.destroy({ where: {}, force: true });
         await this.models.Module.destroy({ where: {}, force: true });
         await this.models.Course.destroy({ where: {}, force: true });
@@ -239,7 +239,7 @@ class DatabaseSeeder {
         console.log(`✅ Создано ${this.lessons.length} уроков`);
     }
 
-    async createLearningMaterials() {
+    async createLessonMaterials() {
         console.log('📚 Создаем обучающие материалы...');
 
         const materialsData = [];
@@ -288,21 +288,21 @@ class DatabaseSeeder {
             }
         });
 
-        this.learningMaterials = await this.models.LearningMaterial.bulkCreate(materialsData);
-        console.log(`✅ Создано ${this.learningMaterials.length} материалов`);
+        this.lessonMaterials = await this.models.LessonMaterial.bulkCreate(materialsData);
+        console.log(`✅ Создано ${this.lessonMaterials.length} материалов`);
     }
 
-    async createAssignments() {
+    async createTasks() {
         console.log('📝 Создаем задания...');
 
-        const assignmentsData = [];
+        const tasksData = [];
 
         this.lessons.forEach((lesson, index) => {
             // Создаем задания для каждого урока
             const difficulties = ['easy', 'medium', 'hard'];
             const difficulty = difficulties[index % difficulties.length];
 
-            assignmentsData.push({
+            tasksData.push({
                 title: `Практическое задание: ${lesson.title}`,
                 description: `Примените полученные знания на практике в этом задании.`,
                 instructions: `Внимательно прочитайте условие задачи. Используйте изученные концепции для решения. Не забудьте проверить свое решение.`,
@@ -313,27 +313,27 @@ class DatabaseSeeder {
             });
         });
 
-        this.assignments = await this.models.LessonAssignment.bulkCreate(assignmentsData);
-        console.log(`✅ Создано ${this.assignments.length} заданий`);
+        this.tasks = await this.models.LessonTask.bulkCreate(tasksData);
+        console.log(`✅ Создано ${this.tasks.length} заданий`);
     }
 
-    async createAssignmentQuestions() {
+    async createTaskQuestions() {
         console.log('❓ Создаем вопросы для заданий...');
 
         const questionsData = [];
 
-        this.assignments.forEach((assignment, assignmentIndex) => {
+        this.tasks.forEach((task, taskIndex) => {
             // Создаем несколько вопросов для каждого задания
 
             // Вопрос с выбором ответа
             questionsData.push({
-                question: `Что является основным понятием в теме "${assignment.title}"?`,
+                question: `Что является основным понятием в теме "${task.title}"?`,
                 questionType: 'single_choice',
                 options: JSON.stringify(['Вариант A', 'Вариант B', 'Вариант C', 'Вариант D']),
                 correctAnswers: JSON.stringify([0]), // Индекс правильного ответа
                 points: 1,
                 order: 0,
-                assignmentId: assignment.id
+                taskId: task.id
             });
 
             // Текстовый вопрос
@@ -342,11 +342,11 @@ class DatabaseSeeder {
                 questionType: 'text',
                 points: 2,
                 order: 1,
-                assignmentId: assignment.id
+                taskId: task.id
             });
 
             // Вопрос с множественным выбором (для каждого третьего задания)
-            if (assignmentIndex % 3 === 0) {
+            if (taskIndex % 3 === 0) {
                 questionsData.push({
                     question: `Какие из перечисленных утверждений верны для этой темы?`,
                     questionType: 'multiple_choice',
@@ -354,23 +354,23 @@ class DatabaseSeeder {
                     correctAnswers: JSON.stringify([0, 2]), // Индексы правильных ответов
                     points: 3,
                     order: 2,
-                    assignmentId: assignment.id
+                    taskId: task.id
                 });
             }
 
             // Вопрос с кодом (для каждого второго задания)
-            if (assignmentIndex % 2 === 0) {
+            if (taskIndex % 2 === 0) {
                 questionsData.push({
                     question: `Напишите код, решающий следующую задачу: продемонстрируйте основные концепции этой темы.`,
                     questionType: 'code',
                     points: 5,
                     order: 3,
-                    assignmentId: assignment.id
+                    taskId: task.id
                 });
             }
         });
 
-        this.questions = await this.models.AssignmentQuestion.bulkCreate(questionsData);
+        this.questions = await this.models.TaskQuestion.bulkCreate(questionsData);
         console.log(`✅ Создано ${this.questions.length} вопросов`);
     }
 }

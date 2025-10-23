@@ -22,22 +22,22 @@ class LessonTaskRepository extends BaseRepository {
             );
 
         } catch (error) {
-            console.error('Error finding learning materials by lesson ID:', error);
+            console.error('Error finding lesson materials by lesson ID:', error);
             throw error;
         }
     }
 
     /**
      * Получить задание с вопросами и файлами
-     * @param {number} assignmentId - ID задания
+     * @param {number} taskId - ID задания
      * @returns {Promise<Object|null>}
      */
-    async findByIdWithDetails(assignmentId) {
+    async findByIdWithDetails(taskId) {
         try {
-            return await this.findById(assignmentId, {
+            return await this.findById(taskId, {
                 include: [
                     {
-                        model: AssignmentQuestion,
+                        model: taskQuestion,
                         as: 'questions',
                         include: [{
                             model: File,
@@ -58,7 +58,7 @@ class LessonTaskRepository extends BaseRepository {
                 ]
             });
         } catch (error) {
-            console.error('Error finding assignment with details:', error);
+            console.error('Error finding task with details:', error);
             throw error;
         }
     }
@@ -75,7 +75,7 @@ class LessonTaskRepository extends BaseRepository {
                 {
                     include: [
                         {
-                            model: AssignmentQuestion,
+                            model: TaskQuestion,
                             as: 'questions',
                             include: [{
                                 model: File,
@@ -93,23 +93,23 @@ class LessonTaskRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding assignments with details by lesson ID:', error);
+            console.error('Error finding task with details by lesson ID:', error);
             throw error;
         }
     }
 
     /**
      * Получить задание с прогрессом студента
-     * @param {number} assignmentId - ID задания
+     * @param {number} taskId - ID задания
      * @param {number} studentId - ID студента
      * @returns {Promise<Object|null>}
      */
-    async findByIdWithStudentProgress(assignmentId, studentId) {
+    async findByIdWithStudentProgress(taskId, studentId) {
         try {
-            return await this.findById(assignmentId, {
+            return await this.findById(taskId, {
                 include: [
                     {
-                        model: AssignmentQuestion,
+                        model: TaskQuestion,
                         as: 'questions',
                         include: [{
                             model: File,
@@ -136,7 +136,7 @@ class LessonTaskRepository extends BaseRepository {
                 ]
             });
         } catch (error) {
-            console.error('Error finding assignment with student progress:', error);
+            console.error('Error finding task with student progress:', error);
             throw error;
         }
     }
@@ -161,7 +161,7 @@ class LessonTaskRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding assignments by difficulty:', error);
+            console.error('Error finding task by difficulty:', error);
             throw error;
         }
     }
@@ -186,7 +186,7 @@ class LessonTaskRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding assignments by min score:', error);
+            console.error('Error finding task by min score:', error);
             throw error;
         }
     }
@@ -200,7 +200,7 @@ class LessonTaskRepository extends BaseRepository {
         try {
             return await this.count({ lessonId });
         } catch (error) {
-            console.error('Error counting assignments by lesson ID:', error);
+            console.error('Error counting task by lesson ID:', error);
             throw error;
         }
     }
@@ -218,7 +218,7 @@ class LessonTaskRepository extends BaseRepository {
             const { count, rows } = await this.model.findAndCountAll({
                 where: { lessonId },
                 include: [{
-                    model: AssignmentQuestion,
+                    model: TaskQuestion,
                     as: 'questions',
                     attributes: ['id']
                 }],
@@ -228,7 +228,7 @@ class LessonTaskRepository extends BaseRepository {
             });
 
             return {
-                assignments: rows,
+                tasks: rows,
                 totalCount: count,
                 totalPages: Math.ceil(count / limit),
                 currentPage: page,
@@ -236,7 +236,7 @@ class LessonTaskRepository extends BaseRepository {
                 hasPrevPage: page > 1
             };
         } catch (error) {
-            console.error('Error finding paginated assignments:', error);
+            console.error('Error finding paginated task:', error);
             throw error;
         }
     }
@@ -246,12 +246,12 @@ class LessonTaskRepository extends BaseRepository {
      * @param {number} lessonId - ID урока
      * @returns {Promise<Object>}
      */
-    async getLessonAssignmentsStats(lessonId) {
+    async getLessonTasksStats(lessonId) {
         try {
-            const assignments = await this.findByLessonId(lessonId);
+            const task = await this.findByLessonId(lessonId);
 
             const stats = {
-                totalAssignments: assignments.length,
+                totalTasks: tasks.length,
                 totalMaxScore: 0,
                 difficulties: {
                     easy: 0,
@@ -259,30 +259,30 @@ class LessonTaskRepository extends BaseRepository {
                     hard: 0
                 },
                 totalQuestions: 0,
-                assignmentsWithFiles: 0
+                tasksWithFiles: 0
             };
 
             // Получаем детальную информацию для каждого задания
-            for (const assignment of assignments) {
-                stats.totalMaxScore += assignment.maxScore;
-                stats.difficulties[assignment.difficulty]++;
+            for (const task of task) {
+                stats.totalMaxScore += task.maxScore;
+                stats.difficulties[task.difficulty]++;
 
-                const assignmentWithDetails = await this.findByIdWithDetails(assignment.id);
-                if (assignmentWithDetails) {
-                    stats.totalQuestions += assignmentWithDetails.questions.length;
-                    if (assignmentWithDetails.files.length > 0) {
-                        stats.assignmentsWithFiles++;
+                const taskWithDetails = await this.findByIdWithDetails(task.id);
+                if (taskWithDetails) {
+                    stats.totalQuestions += taskWithDetails.questions.length;
+                    if (taskWithDetails.files.length > 0) {
+                        stats.tasksWithFiles++;
                     }
                 }
             }
 
-            stats.averageMaxScore = stats.totalAssignments > 0
-                ? Math.round(stats.totalMaxScore / stats.totalAssignments)
+            stats.averageMaxScore = stats.totalTasks > 0
+                ? Math.round(stats.totalMaxScore / stats.totalTasks)
                 : 0;
 
             return stats;
         } catch (error) {
-            console.error('Error getting lesson assignments stats:', error);
+            console.error('Error getting lesson task stats:', error);
             throw error;
         }
     }
@@ -290,21 +290,21 @@ class LessonTaskRepository extends BaseRepository {
     /**
      * Получить следующее задание в уроке
      * @param {number} lessonId - ID урока
-     * @param {number} currentAssignmentId - Текущее ID задания
+     * @param {number} currentTaskId - Текущее ID задания
      * @returns {Promise<Object|null>}
      */
-    async findNextAssignment(lessonId, currentAssignmentId) {
+    async findNextTask(lessonId, currentTaskId) {
         try {
             return await this.model.findOne({
                 where: {
                     lessonId,
-                    id: { [require('sequelize').Op.gt]: currentAssignmentId }
+                    id: { [require('sequelize').Op.gt]: currentTaskId }
                 },
                 order: [['id', 'ASC']],
                 limit: 1
             });
         } catch (error) {
-            console.error('Error finding next assignment:', error);
+            console.error('Error finding next task:', error);
             throw error;
         }
     }
@@ -312,21 +312,21 @@ class LessonTaskRepository extends BaseRepository {
     /**
      * Получить предыдущее задание в уроке
      * @param {number} lessonId - ID урока
-     * @param {number} currentAssignmentId - Текущее ID задания
+     * @param {number} currentTaskId - Текущее ID задания
      * @returns {Promise<Object|null>}
      */
-    async findPreviousAssignment(lessonId, currentAssignmentId) {
+    async findPreviousTask(lessonId, currentTaskId) {
         try {
             return await this.model.findOne({
                 where: {
                     lessonId,
-                    id: { [require('sequelize').Op.lt]: currentAssignmentId }
+                    id: { [require('sequelize').Op.lt]: currentTaskId }
                 },
                 order: [['id', 'DESC']],
                 limit: 1
             });
         } catch (error) {
-            console.error('Error finding previous assignment:', error);
+            console.error('Error finding previous task:', error);
             throw error;
         }
     }
@@ -344,7 +344,7 @@ class LessonTaskRepository extends BaseRepository {
                 options
             );
         } catch (error) {
-            console.error('Error finding assignments by title:', error);
+            console.error('Error finding task by title:', error);
             throw error;
         }
     }
@@ -362,7 +362,7 @@ class LessonTaskRepository extends BaseRepository {
                 options
             );
         } catch (error) {
-            console.error('Error finding assignments by description:', error);
+            console.error('Error finding task by description:', error);
             throw error;
         }
     }
@@ -372,7 +372,7 @@ class LessonTaskRepository extends BaseRepository {
      * @param {Date} date - Дата для проверки
      * @returns {Promise<Array>}
      */
-    async findExpiredAssignments(date = new Date()) {
+    async findExpiredTasks(date = new Date()) {
         try {
             return await this.findByCondition({
                 deadline: {
@@ -380,7 +380,7 @@ class LessonTaskRepository extends BaseRepository {
                 }
             });
         } catch (error) {
-            console.error('Error finding expired assignments:', error);
+            console.error('Error finding expired task:', error);
             throw error;
         }
     }
@@ -414,7 +414,7 @@ class LessonTaskRepository extends BaseRepository {
                 ...options
             });
         } catch (error) {
-            console.error('Error finding assignments by course ID:', error);
+            console.error('Error finding task by course ID:', error);
             throw error;
         }
     }

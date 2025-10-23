@@ -60,11 +60,11 @@ const StudentProgress = sequelize.define('StudentProgress', {
             key: 'id'
         }
     },
-    assignmentId: {
+    taskId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'lesson_assignments',
+            model: 'lessonTask',
             key: 'id'
         }
     }
@@ -73,7 +73,7 @@ const StudentProgress = sequelize.define('StudentProgress', {
     timestamps: true,
     indexes: [
         {
-            fields: ['studentId', 'assignmentId'],
+            fields: ['studentId', 'taskId'],
             unique: true
         }
     ]
