@@ -67,15 +67,16 @@ class RedisService {
         }
     }
 
-    // Ответы на вопросы (choice)
     async toggleUserOption(userId, questionId, optionIndex) {
         const key = this.getUserQuestionKey(userId, questionId);
-        const isMember = await this.client.sIsMember(key, optionIndex);
+        // Преобразуем optionIndex в строку
+        const optionIndexStr = optionIndex.toString();
+        const isMember = await this.client.sIsMember(key, optionIndexStr);
 
         if (isMember) {
-            await this.client.sRem(key, optionIndex);
+            await this.client.sRem(key, optionIndexStr);
         } else {
-            await this.client.sAdd(key, optionIndex);
+            await this.client.sAdd(key, optionIndexStr);
         }
 
         await this.client.expire(key, this.TTL);
@@ -84,14 +85,17 @@ class RedisService {
 
     async setUserOption(userId, questionId, optionIndex) {
         const key = this.getUserQuestionKey(userId, questionId);
+        // Преобразуем optionIndex в строку
+        const optionIndexStr = optionIndex.toString();
         await this.client.del(key);
-        await this.client.sAdd(key, optionIndex);
+        await this.client.sAdd(key, optionIndexStr);
         await this.client.expire(key, this.TTL);
     }
 
     async getUserSelectedOptions(userId, questionId) {
         const key = this.getUserQuestionKey(userId, questionId);
         const members = await this.client.sMembers(key);
+        // Преобразуем строки обратно в числа
         return members.map(Number).sort((a, b) => a - b);
     }
 
