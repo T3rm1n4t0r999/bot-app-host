@@ -3,6 +3,7 @@ const { createClient } = require('redis');
 class RedisService {
     constructor() {
         this.client = null;
+        // Сколько хранить состояние незавершенного задания (по умолчанию 24 часа)
         this.TTL = 24 * 60 * 60; // 24 часа
     }
 
@@ -23,6 +24,15 @@ class RedisService {
 
     getTaskProgressKey(userId, taskId) {
         return `user:${userId}:task:${taskId}:progress`;
+    }
+
+    getUserTextKey(userId, questionId) {
+        return `user:${userId}:question:${questionId}:text`;
+    }
+
+    getAwaitingTextKey(userId) {
+        // Храним текущий вопрос, для которого ожидаем текстовый ответ
+        return `user:${userId}:await_text`;
     }
 
     // Управление TTL
@@ -57,7 +67,7 @@ class RedisService {
         }
     }
 
-    // Ответы на вопросы
+    // Ответы на вопросы (choice)
     async toggleUserOption(userId, questionId, optionIndex) {
         const key = this.getUserQuestionKey(userId, questionId);
         const isMember = await this.client.sIsMember(key, optionIndex);
@@ -91,6 +101,40 @@ class RedisService {
         return members.length > 0 ? Number(members[0]) : null;
     }
 
+    // Ответы на вопросы (text/code)
+    async setUserTextAnswer(userId, questionId, text) {
+        const key = this.getUserTextKey(userId, questionId);
+        await this.client.set(key, text);
+        await this.client.expire(key, this.TTL);
+    }
+
+    async getUserTextAnswer(userId, questionId) {
+        const key = this.getUserTextKey(userId, questionId);
+        return await this.client.get(key);
+    }
+
+    async clearUserTextAnswer(userId, questionId) {
+        const key = this.getUserTextKey(userId, questionId);
+        await this.client.del(key);
+    }
+
+    // Ожидание текстового ответа (маркер состояния)
+    async setAwaitingTextAnswer(userId, taskId, questionId) {
+        const key = this.getAwaitingTextKey(userId);
+        await this.setWithTTL(key, JSON.stringify({ taskId, questionId }));
+    }
+
+    async getAwaitingTextAnswer(userId) {
+        const key = this.getAwaitingTextKey(userId);
+        const data = await this.client.get(key);
+        return data ? JSON.parse(data) : null;
+    }
+
+    async clearAwaitingTextAnswer(userId) {
+        const key = this.getAwaitingTextKey(userId);
+        await this.client.del(key);
+    }
+
     // Очистка
     async clearUserQuestionState(userId, questionId) {
         const key = this.getUserQuestionKey(userId, questionId);
@@ -102,21 +146,26 @@ class RedisService {
         await this.client.del(key);
     }
 
-    // Получение всех ответов для задания
-    async getUserTaskAnswers(userId, taskId) {
-        const progress = await this.getTaskProgress(userId, taskId);
-        if (!progress) return null;
-
+    // Получение всех ответов для задания (без знания типов)
+    async getUserTaskAnswers(userId, taskId, questionIds) {
         const answers = {};
-        for (const questionId of progress.questionIds) {
-            const question = await lessonService.getTaskQuestionById(questionId);
-            if (question.questionType === "multiple_choice") {
-                answers[questionId] = await this.getUserSelectedOptions(userId, questionId);
-            } else {
-                answers[questionId] = await this.getUserSelectedOption(userId, questionId);
+        for (const questionId of questionIds) {
+            // Для choice типов ответы хранятся в set, для текстовых — в строке
+            const selected = await this.getUserSelectedOptions(userId, questionId);
+            if (selected && selected.length > 0) {
+                answers[questionId] = selected;
+                continue;
+            }
+            const single = await this.getUserSelectedOption(userId, questionId);
+            if (single !== null && single !== undefined) {
+                answers[questionId] = single;
+                continue;
+            }
+            const text = await this.getUserTextAnswer(userId, questionId);
+            if (text) {
+                answers[questionId] = text;
             }
         }
-
         return answers;
     }
 }

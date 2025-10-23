@@ -125,7 +125,7 @@ class KeyboardFactory {
             .text('Задания', `view_lesson_task:${lessonId}`);
     }
 
-    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions, userId) {
+    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions) {
         const keyboard = new InlineKeyboard();
         const options = typeof taskQuestion.options === 'string'
             ? JSON.parse(taskQuestion.options)
@@ -134,10 +134,10 @@ class KeyboardFactory {
         // Добавляем варианты ответа
         switch (taskQuestion.questionType) {
             case "multiple_choice":
-                taskQuestion.userAnswer.forEach((optionIndex) => {
-                    const isSelected = taskQuestion.userAnswer.includes(optionIndex);
+                options.forEach((option, index) => {
+                    const isSelected = Array.isArray(taskQuestion.userAnswer) && taskQuestion.userAnswer.includes(index);
                     const icon = isSelected ? "✅" : "◻️";
-                    keyboard.text(`${icon} ${options[optionIndex]}`, `toggle_multi:${taskQuestion.id}:${optionIndex}:${taskId}`);
+                    keyboard.text(`${icon} ${option}`, `toggle_multi:${taskQuestion.id}:${index}:${taskId}`);
                 });
                 break;
 
@@ -147,6 +147,10 @@ class KeyboardFactory {
                     const icon = isSelected ? "🔘" : "⚪";
                     keyboard.text(`${icon} ${option}`, `select_single:${taskQuestion.id}:${index}:${taskId}`);
                 });
+                break;
+            case "text":
+            case "code":
+                keyboard.text('✍️ Ввести ответ текстом', `await_text:${taskQuestion.id}:${taskId}`);
                 break;
         }
 
