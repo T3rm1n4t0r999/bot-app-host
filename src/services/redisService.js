@@ -147,6 +147,7 @@ class RedisService {
 
     async clearTaskProgress(userId, taskId) {
         const key = this.getTaskProgressKey(userId, taskId);
+        console.log("progress in redis was deleted");
         await this.client.del(key);
     }
 

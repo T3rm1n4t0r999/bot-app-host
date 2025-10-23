@@ -44,7 +44,7 @@ router.callbackQuery(/nav_question:/, requireRegistration(), requireStudentRole(
 router.callbackQuery(/finish_task:/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 router.callbackQuery(/show_progress:/, requireRegistration(), requireStudentRole(),LessonTaskController.handleCallbackQuery);
 router.callbackQuery(/restart_task:/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
-router.callbackQuery(/back_to_tasks/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
+//router.callbackQuery(/back_to_task/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 
 // Служебная кнопка-индикатор страницы
 router.callbackQuery('page_info', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
@@ -66,7 +66,7 @@ router.command('modules', requireRegistration(), requireStudentRole(), ModuleCon
 
 // Обработка текстового ответа пользователя для вопросов (если ожидается текст)
 router.on('message:text', requireRegistration(), requireStudentRole(), async (ctx, next) => {
-    const handled = await LessonController.handleTextAnswer(ctx);
+    const handled = await LessonTaskController.handleTextAnswer(ctx);
     if (!handled) return next();
 });
 

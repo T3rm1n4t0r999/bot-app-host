@@ -177,10 +177,10 @@ class KeyboardFactory {
     /**
      * Клавиатура для результатов
      */
-    static createResultsKeyboard(taskId) {
+    static createResultsKeyboard(taskId, lessonId) {
         return new InlineKeyboard()
             .text('🔄 Пройти заново', `restart_task:${taskId}`)
-            .text('📋 К списку заданий', 'back_to_tasks')
+            .text('📋 К заданию', `view_lesson_task:${lessonId}`)
             .row();
     }
 
