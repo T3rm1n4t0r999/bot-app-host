@@ -11,6 +11,7 @@ const StudentProgress = require('./studentProgress');
 const File = require('./file');
 const StudentCourse = require('./studentCourse');
 const Student = require('./student');
+const logger = require('../logger/logger');
 // Настройка ассоциаций
 function setupAssociations() {
     Course.hasMany(Module, {
@@ -209,6 +210,7 @@ function setupAssociations() {
         otherKey: 'studentId',
         as: 'studentsProgress'
     });
+    logger.info('Setup association completed.');
 }
 
 module.exports = {

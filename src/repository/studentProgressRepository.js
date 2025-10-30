@@ -178,7 +178,7 @@ class StudentProgressRepository extends BaseRepository {
 
             return await this.updateProgress(studentId, taskId, {
                 status: 'completed',
-                progress: 100,
+                progress: correctCount,
                 answers,
                 grade,
                 completedAt: new Date()

@@ -1,5 +1,6 @@
 const { ForbiddenError, AppError, UnauthorizedError} = require("../utils/errors");
 const errorHandler = require("../utils/errorHandler");
+const logger = require("../logger/logger");
 
 module.exports = function(allowedRoles = ['student', 'premium']) {
     return async (ctx, next) => {

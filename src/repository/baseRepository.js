@@ -1,3 +1,4 @@
+const logger = require('../logger/logger');
 /**
  * Базовый репозиторий с общими методами для работы с моделями
  */
@@ -16,7 +17,7 @@ class BaseRepository {
         try {
             return await this.model.findByPk(id, options);
         } catch (error) {
-            console.error(`Error finding ${this.model.name} by ID:`, error);
+            logger.error(`Error finding ${this.model.name} by ID:`);
             throw error;
         }
     }
@@ -30,7 +31,7 @@ class BaseRepository {
         try {
             return await this.model.findAll(options);
         } catch (error) {
-            console.error(`Error finding all ${this.model.name}:`, error);
+            logger.error(`Error finding all ${this.model.name}:`);
             throw error;
         }
     }
@@ -48,7 +49,7 @@ class BaseRepository {
                 ...options
             });
         } catch (error) {
-            console.error(`Error finding ${this.model.name} by condition:`, error);
+            logger.error(`Error finding ${this.model.name} by condition:`);
             throw error;
         }
     }
@@ -66,7 +67,7 @@ class BaseRepository {
                 ...options
             });
         } catch (error) {
-            console.error(`Error finding one ${this.model.name}:`, error);
+            logger.error(`Error finding one ${this.model.name}:`);
             throw error;
         }
     }
@@ -80,7 +81,7 @@ class BaseRepository {
         try {
             return await this.model.create(data);
         } catch (error) {
-            console.error(`Error creating ${this.model.name}:`, error);
+            logger.error(`Error creating ${this.model.name}:`);
             throw error;
         }
     }
@@ -100,7 +101,7 @@ class BaseRepository {
             await record.update(data);
             return record;
         } catch (error) {
-            console.error(`Error updating ${this.model.name}:`, error);
+            logger.error(`Error updating ${this.model.name}:`);
             throw error;
         }
     }
@@ -119,7 +120,7 @@ class BaseRepository {
             await record.destroy();
             return true;
         } catch (error) {
-            console.error(`Error deleting ${this.model.name}:`, error);
+            logger.error(`Error deleting ${this.model.name}:`);
             throw error;
         }
     }
@@ -133,7 +134,7 @@ class BaseRepository {
         try {
             return await this.model.count({ where });
         } catch (error) {
-            console.error(`Error counting ${this.model.name}:`, error);
+            logger.error(`Error counting ${this.model.name}:`);
             throw error;
         }
     }
@@ -148,7 +149,7 @@ class BaseRepository {
             const count = await this.count(where);
             return count > 0;
         } catch (error) {
-            console.error(`Error checking existence of ${this.model.name}:`, error);
+            logger.error(`Error checking existence of ${this.model.name}:`);
             throw error;
         }
     }

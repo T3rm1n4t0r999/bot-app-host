@@ -1,6 +1,6 @@
 const StudentRepository = require("../repository/studentRepository");
 const { sequelize } = require('../database/db');
-const StudentCacheManager = require("../utils/studentCacheManager");
+const logger = require("../logger/logger");
 
 class StudentService {
     constructor() {
@@ -17,8 +17,7 @@ class StudentService {
         try {
             const telegramId = userData.id.toString();
             transaction = await sequelize.transaction();
-            
-            // Проверяем, существует ли студент
+
             let student = await this.studentRepository.findByTelegramId(telegramId);
             
             if (!student) {
@@ -41,10 +40,9 @@ class StudentService {
                 try {
                     await transaction.rollback();
                 } catch (rollbackError) {
-                    console.error('Rollback failed:', rollbackError);
+                    logger.error(`Rollback failed while registering student: ${studentId}`, error);
                 }
             }
-            console.error("Ошибка в StudentService.registerStudent:", error);
             throw error;
         }
     }
@@ -58,7 +56,7 @@ class StudentService {
         try {
             return await this.studentRepository.findByTelegramId(telegramId);
         } catch (error) {
-            console.error('Ошибка в StudentService.getStudentProfile:', error);
+            logger.error('Error in StudentService.getStudentProfile:', error);
             throw error;
         }
     }
@@ -72,7 +70,7 @@ class StudentService {
         try {
             return await this.studentRepository.findAll(options);
         } catch (error) {
-            console.error('Ошибка в StudentService.getAllStudents:', error);
+            logger.error('Error in StudentService.getAllStudents:', error);
             throw error;
         }
     }
@@ -86,7 +84,7 @@ class StudentService {
         try {
             return await this.studentRepository.findAllWithCourses(options);
         } catch (error) {
-            console.error('Ошибка в StudentService.getStudentsWithCourses:', error);
+            logger.error('Error in StudentService.getStudentsWithCourses:', error);
             throw error;
         }
     }
@@ -145,7 +143,7 @@ class StudentService {
         try {
             return await this.studentRepository.hasAccessToCourse(studentId, courseId);
         } catch (error) {
-            console.error('Ошибка в StudentService.hasAccessToCourse:', error);
+            logger.error('Ошибка в StudentService.hasAccessToCourse:', error);
             throw error;
         }
     }
@@ -159,7 +157,7 @@ class StudentService {
         try {
             return await this.studentRepository.findByRole(role);
         } catch (error) {
-            console.error('Ошибка в StudentService.getStudentsByRole:', error);
+            logger.error('Ошибка в StudentService.getStudentsByRole:', error);
             throw error;
         }
     }
@@ -174,7 +172,7 @@ class StudentService {
         try {
             return await this.studentRepository.update(studentId, updateData);
         } catch (error) {
-            console.error('Ошибка в StudentService.updateStudentProfile:', error);
+            logger.error('Ошибка в StudentService.updateStudentProfile:', error);
             throw error;
         }
     }

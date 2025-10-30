@@ -2,6 +2,7 @@ const BaseRepository = require('./baseRepository');
 const Student = require('../models/student');
 const StudentCourse = require('../models/studentCourse');
 const Course = require('../models/course');
+const logger = require('../logger/logger');
 
 class StudentRepository extends BaseRepository {
     constructor() {
@@ -17,44 +18,7 @@ class StudentRepository extends BaseRepository {
         try {
             return await this.findOne({ telegram_id: telegramId });
         } catch (error) {
-            console.error('Error finding student by Telegram ID:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Найти студента по email
-     * @param {string} email - Email студента
-     * @returns {Promise<Object|null>}
-     */
-    async findByEmail(email) {
-        try {
-            return await this.findOne({ email });
-        } catch (error) {
-            console.error('Error finding student by email:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Получить студентов с их курсами
-     * @param {Object} options - Дополнительные опции
-     * @returns {Promise<Array>}
-     */
-    async findAllWithCourses(options = {}) {
-        try {
-            return await this.findAll({
-                include: [{
-                    model: Course,
-                    as: 'accessibleCourses',
-                    through: {
-                        attributes: []
-                    }
-                }],
-                ...options
-            });
-        } catch (error) {
-            console.error('Error finding students with courses:', error);
+            logger.error(`Error finding student by Telegram ID:${telegramId}`, error);
             throw error;
         }
     }
@@ -76,49 +40,7 @@ class StudentRepository extends BaseRepository {
             });
             return studentCourses.map(studentCourse => studentCourse.course);
         } catch (error) {
-            console.error('Error getting accessible courses:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Добавить курс студенту
-     * @param {number} studentId - ID студента
-     * @param {number} courseId - ID курса
-     * @returns {Promise<Object>}
-     */
-    async addCourse(studentId, courseId) {
-        try {
-            return await StudentCourse.create({
-                studentId,
-                courseId
-            });
-        } catch (error) {
-            console.error('Error adding course to student:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Удалить курс у студента
-     * @param {number} studentId - ID студента
-     * @param {number} courseId - ID курса
-     * @returns {Promise<boolean>}
-     */
-    async removeCourse(studentId, courseId) {
-        try {
-            const studentCourse = await StudentCourse.findOne({
-                where: { studentId, courseId }
-            });
-            
-            if (!studentCourse) {
-                return false;
-            }
-            
-            await studentCourse.destroy();
-            return true;
-        } catch (error) {
-            console.error('Error removing course from student:', error);
+            logger.error(`Error getting accessible courses for studentId:${studentId}`, error);
             throw error;
         }
     }
@@ -135,21 +57,7 @@ class StudentRepository extends BaseRepository {
                 where: { studentId, courseId }
             });
         } catch (error) {
-            console.error('Error checking course access:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Получить студентов по роли
-     * @param {string} role - Роль студента
-     * @returns {Promise<Array>}
-     */
-    async findByRole(role) {
-        try {
-            return await this.findByCondition({ role });
-        } catch (error) {
-            console.error('Error finding students by role:', error);
+            logger.error(`Error checking course access for studentId: ${studentId}, course: ${courseId}`, error);
             throw error;
         }
     }

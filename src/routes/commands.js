@@ -12,7 +12,7 @@ const LessonTaskController = require("../controllers/lessonTaskController");
 const router = new Composer();
 
 // Обработка callback queries для курсов
-router.callbackQuery(/view_course:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
+router.callbackQuery(/view_course_modules:\d+:\d+/, requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_courses', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_main', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('back_to_profile', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
@@ -57,9 +57,6 @@ router.hears('👤 Мой профиль', requireRegistration(), StudentControl
 
 router.command('course', requireRegistration(), requireStudentRole(), CourseController.getCourses);
 router.hears('📚 Курсы', requireRegistration(), requireStudentRole(), CourseController.getCourses);
-
-// Команда для отладки модулей (можно удалить в продакшене)
-router.command('modules', requireRegistration(), requireStudentRole(), ModuleController.getModules);
 
 // router.command('homework',requireRegistration(), requireStudentRole(), HomeworkController.getHomework)
 // router.hears('📝 Домашние задания', requireRegistration(), requireStudentRole(), HomeworkController.getHomework);

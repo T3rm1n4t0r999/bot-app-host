@@ -65,9 +65,10 @@ class CourseController {
         try {
             const callbackData = ctx.callbackQuery.data;
 
-            if (callbackData.startsWith('view_course:')) {
+            if (callbackData.startsWith('view_course_modules:')) {
                 const courseId = parseInt(callbackData.split(':')[1]);
-                await CourseController.showCourseModules(ctx, courseId);
+                const page = parseInt(callbackData.split(':')[2]);
+                await CourseController.showCourseModules(ctx, courseId, page);
             } else if (callbackData.startsWith('courses_page:')) {
                 const page = parseInt(callbackData.split(':')[1]);
                 await CourseController.showCourses(ctx, page);
@@ -91,7 +92,7 @@ class CourseController {
      * @param {import('grammy').Context} ctx - Контекст бота
      * @param {number} courseId - ID курса
      */
-    static async showCourseModules(ctx, courseId) {
+    static async showCourseModules(ctx, courseId, page= 1) {
         try {
             const modules = await moduleService.getModulesByCourseId(courseId);
 
@@ -100,8 +101,22 @@ class CourseController {
                 return;
             }
 
+            // Настройки пагинации
+            const MODULES_PER_PAGE = 3;
+            const totalPages = Math.ceil(modules.length / MODULES_PER_PAGE);
+
+            // Проверка валидности страницы
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            // Получаем модули для текущей страницы
+            const startIndex = (page - 1) * MODULES_PER_PAGE;
+            const endIndex = startIndex + MODULES_PER_PAGE;
+            const currentPageModules = modules.slice(startIndex, endIndex);
+
+            // Формируем сообщение
             const message = '📚 Модули курса:';
-            const keyboard = KeyboardFactory.createModulesKeyboard(modules, courseId);
+            const keyboard = KeyboardFactory.createModulesKeyboard(currentPageModules, courseId, page, totalPages);
 
             await ctx.editMessageText(message, { reply_markup: keyboard });
             await ctx.answerCallbackQuery();

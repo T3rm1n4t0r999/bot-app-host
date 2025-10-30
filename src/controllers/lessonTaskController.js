@@ -1,10 +1,10 @@
 const RedisService = require("../services/redisService");
 const KeyboardFactory = require("../services/keyboardFactory");
-const StudentProgressRepository = require("../repository/studentProgressRepository");
 const LessonService = require("../services/lessonService");
+const TaskService = require("../services/taskService");
 const {InlineKeyboard} = require("grammy");
 const lessonService = new LessonService();
-
+const taskService = new TaskService();
 class LessonTaskController {
     static async handleCallbackQuery(ctx) {
         try {
@@ -83,10 +83,12 @@ class LessonTaskController {
             }
             ctx.lessonId = lessonId;
             const task = tasks[0]
-            const keyboard = new InlineKeyboard().text('🔙 К уроку', `view_lesson:${lessonId}`).text('Начать выполнение', `view_task_questions:${task.id}`);
-            let message = '📚 Задания урока:\n\n';
-            message += `${task.title}\n${task.description}\n${task.maxScore}\n${task.difficulty}\n`;
-            // Отправляем основное сообщение со списком материалов
+            const keyboard = KeyboardFactory.createTaskKeyboard(lessonId, task.id);
+            const message = 'Задание урока:\n\n'+
+                                    `📖 *Название*\\: ${task.title}\n`+
+                                    `🏆 *Максимально баллов*: ${task.maxScore}\n`+
+                                    `⭐ *Сложность*: ${task.difficulty}\n`;
+
             await ctx.editMessageText(message, {
                 reply_markup: keyboard,
                 parse_mode: 'Markdown'
@@ -114,7 +116,7 @@ class LessonTaskController {
         }
     }
 
-    static async renderQuestionByIndex(ctx, taskId, index) {
+    static async renderQuestionByIndex(ctx, taskId, index, isNewMessage = false) {
         try {
             const userId = ctx.from.id.toString();
             const progress = await RedisService.getTaskProgress(userId, taskId);
@@ -146,17 +148,37 @@ class LessonTaskController {
                 message += `\nВаш ответ: \n${preview}\n`;
             }
 
-            const keyboard = KeyboardFactory.createQuestionNavigation(taskQuestion, taskId, safeIndex, totalQuestions);
+            const questionIds = progress.questionIds;
+            const answers = await RedisService.getUserTaskAnswers(userId, taskId, questionIds);
+            const answered = Object.keys(answers).length;
 
-            // РЕДАКТИРУЕМ СУЩЕСТВУЮЩЕЕ СООБЩЕНИЕ (для вопросов с выбором)
-            await ctx.editMessageText(message, {
-                reply_markup: keyboard,
-                parse_mode: 'Markdown'
-            });
-            await ctx.answerCallbackQuery();
+            const lessonTask = await lessonService.getLessonByLessonTaskId(taskId);
+            const lessonId = lessonTask.lessonId;
+            const keyboard = KeyboardFactory.createQuestionNavigation(taskQuestion, taskId, safeIndex, totalQuestions, answered, lessonId);
+
+            // ВЫБОР СПОСОБА ОТПРАВКИ В ЗАВИСИМОСТИ ОТ ПАРАМЕТРА
+            if (isNewMessage) {
+                // ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ (для текстовых ответов)
+                await ctx.reply(message, {
+                    reply_markup: keyboard,
+                    parse_mode: 'Markdown'
+                });
+            } else {
+                // РЕДАКТИРУЕМ СУЩЕСТВУЮЩЕЕ СООБЩЕНИЕ (для вопросов с выбором)
+                await ctx.editMessageText(message, {
+                    reply_markup: keyboard,
+                    parse_mode: 'Markdown'
+                });
+                await ctx.answerCallbackQuery();
+            }
+
         } catch (error) {
             console.error('Ошибка при отображении вопроса:', error);
-            await ctx.answerCallbackQuery('❌ Не удалось отобразить вопрос');
+            if (isNewMessage) {
+                await ctx.reply('❌ Не удалось отобразить вопрос');
+            } else {
+                await ctx.answerCallbackQuery('❌ Не удалось отобразить вопрос');
+            }
         }
     }
 
@@ -226,11 +248,9 @@ class LessonTaskController {
             const progress = await RedisService.getTaskProgress(userId, taskId);
             const index = progress?.questionIds.findIndex(id => id === questionId) ?? 0;
 
-            // Переходим к следующему вопросу, если он есть
             const nextIndex = Math.min(index + 1, (progress?.questionIds.length ?? 1) - 1);
 
-            // ДЛЯ ТЕКСТОВЫХ ОТВЕТОВ - ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ
-            await LessonTaskController.renderNewQuestionByIndex(ctx, taskId, nextIndex);
+            await LessonTaskController.renderQuestionByIndex(ctx, taskId, nextIndex, true);
             return true;
         } catch (error) {
             console.error('Ошибка handleTextAnswer:', error);
@@ -238,50 +258,6 @@ class LessonTaskController {
         }
     }
 
-    static async renderNewQuestionByIndex(ctx, taskId, index) {
-        try {
-            const userId = ctx.from.id.toString();
-            const progress = await RedisService.getTaskProgress(userId, taskId);
-            if (!progress) {
-                await LessonTaskController.showTaskQuestions(ctx, taskId);
-                return;
-            }
-            const totalQuestions = progress.questionIds.length;
-            const safeIndex = Math.max(0, Math.min(index, totalQuestions - 1));
-            const questionId = progress.questionIds[safeIndex];
-            await RedisService.updateCurrentQuestion(userId, taskId, safeIndex);
-
-            const taskQuestion = await lessonService.getTaskQuestionById(questionId);
-
-            // Получаем сохраненный ответ
-            if (taskQuestion.questionType === 'multiple_choice') {
-                taskQuestion.userAnswer = await RedisService.getUserSelectedOptions(userId, questionId);
-            } else if (taskQuestion.questionType === 'single_choice') {
-                taskQuestion.userAnswer = await RedisService.getUserSelectedOption(userId, questionId);
-            } else if (taskQuestion.questionType === 'text' || taskQuestion.questionType === 'code') {
-                taskQuestion.userAnswer = await RedisService.getUserTextAnswer(userId, questionId);
-            }
-
-            let message = `Вопрос ${safeIndex + 1}/${totalQuestions}:\n\n`;
-            message += `${taskQuestion.question}\n`;
-            if ((taskQuestion.questionType === 'text' || taskQuestion.questionType === 'code') && taskQuestion.userAnswer) {
-                const preview = taskQuestion.userAnswer.length > 200 ? `${taskQuestion.userAnswer.slice(0, 200)}…` : taskQuestion.userAnswer;
-                message += `\nВаш ответ: \n${preview}\n`;
-            }
-
-            const keyboard = KeyboardFactory.createQuestionNavigation(taskQuestion, taskId, safeIndex, totalQuestions);
-
-            // ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ (для текстовых ответов)
-            await ctx.reply(message, {
-                reply_markup: keyboard,
-                parse_mode: 'Markdown'
-            });
-
-        } catch (error) {
-            console.error('Ошибка при отображении вопроса:', error);
-            await ctx.reply('❌ Не удалось отобразить вопрос');
-        }
-    }
 
     static async showProgress(ctx, taskId) {
         try {
@@ -291,16 +267,12 @@ class LessonTaskController {
                 await ctx.answerCallbackQuery('Прогресс не найден');
                 return;
             }
-            let answered = 0;
-            for (const qId of progress.questionIds) {
-                const multi = await RedisService.getUserSelectedOptions(userId, qId);
-                const single = await RedisService.getUserSelectedOption(userId, qId);
-                const text = await RedisService.getUserTextAnswer(userId, qId);
-                if ((multi && multi.length > 0) || single !== null || (text && text.length > 0)) {
-                    answered++;
-                }
-            }
-            const message = `📊 Прогресс: ${answered}/${progress.questionIds.length}`;
+
+            const questionIds = progress.questionIds;
+            const answers = await RedisService.getUserTaskAnswers(userId, taskId, questionIds);
+            const answered = Object.keys(answers).length
+
+            const message = `📊 Прогресс: ${answered.length}\`/\`${progress.questionIds.length}`;
             const keyboard = KeyboardFactory.createProgressKeyboard(taskId, progress.currentIndex ?? 0);
 
             try {
@@ -354,6 +326,12 @@ class LessonTaskController {
             const questionIds = progress.questionIds;
             const answers = await RedisService.getUserTaskAnswers(userId, taskId, questionIds);
 
+            if (questionIds.length !== Object.keys(answers).length)
+            {
+                await ctx.answerCallbackQuery('Не все вопросы решены!');
+                return;
+            }
+
             let earnedPoints = 0;
             let totalAutoPoints = 0;
 
@@ -376,27 +354,35 @@ class LessonTaskController {
 
             const resultsLines = [];
             resultsLines.push(`Результат: ${earnedPoints}/${totalAutoPoints}`);
-            const textQuestions = [];
-            for (const qId of questionIds) {
-                const question = await lessonService.getTaskQuestionById(qId);
-                if (question.questionType === 'text' || question.questionType === 'code') {
-                    textQuestions.push(qId);
-                }
-            }
-            if (textQuestions.length > 0) {
-                resultsLines.push(`Есть ${textQuestions.length} вопрос(а) с текстовым ответом — оценка после проверки.`);
-            }
 
             if (studentId) {
                 // Сохраняем прогресс/результаты в БД
-                const repo = new StudentProgressRepository();
-                await repo.findOrCreateProgress(studentId, taskId, { startedAt: new Date() });
-                await repo.completeTask(studentId, taskId, {
-                    correctCount: earnedPoints,
-                    totalCount: totalAutoPoints,
-                    grade: earnedPoints,
-                    answers
-                });
+                const { progress: studentProgress, created } = await taskService.findOrCreateProgress(studentId, taskId);
+
+                let shouldSave = false;
+
+                if (created) {
+                    // Первое прохождение - всегда сохраняем
+                    shouldSave = true;
+                    resultsLines.push(`🎯 Первая попытка!`);
+                } else if (studentProgress.progress < earnedPoints) {
+                    // Новый рекорд
+                    shouldSave = true;
+                    resultsLines.push(`🎉 Новый рекорд! Предыдущий результат: ${studentProgress.progress}/${totalAutoPoints}`);
+                } else if (studentProgress.progress === earnedPoints) {
+                    resultsLines.push(`📊 Такой же результат как в предыдущей попытке: ${earnedPoints}/${totalAutoPoints}`);
+                } else {
+                    resultsLines.push(`📊 Текущий результат: ${earnedPoints}/${totalAutoPoints} (лучший: ${studentProgress.progress}/${totalAutoPoints})`);
+                }
+
+                if (shouldSave) {
+                    const completed_task = await taskService.completeTask(studentId, taskId, {
+                        correctCount: earnedPoints,
+                        totalCount: totalAutoPoints,
+                        grade: earnedPoints,
+                        answers
+                    });
+                }
             }
 
 

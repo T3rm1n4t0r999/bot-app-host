@@ -1,31 +1,28 @@
 const { Bot } = require('grammy');
 const mainRoutes = require('../routes/commands');
-const {sequelize} = require('../database/db');
-const { SocksProxyAgent } = require('socks-proxy-agent');
-const {setupAssociations} = require("../models");
-const RedisService = require('../services/redisService');
-
+const proxy = require('../utils/proxy');
+const logger = require('../logger/logger');
 async function createBot(token) {
-    // Проверка подключения к БД
+
     try {
-        await sequelize.authenticate();
-        console.log('Подключение к БД успешно');
-        await RedisService.connect();
-        setupAssociations();
-        await sequelize.sync(false);
+        const bot = new Bot(process.env.BOT_TOKEN);
+        const agent = proxy.getProxyAgent()
+        if (agent) {
+            bot.api.config.use((prev, method, payload, signal) => {
+                return prev(method, {
+                    ...payload,
+                    agent: agent
+                }, signal);
+            });
+        }
+
+        bot.use(mainRoutes);
+        logger.info('Bot created successfully.');
+        return bot;
     } catch (error) {
-        console.error('Ошибка подключения к БД:', error);
-        process.exit(1);
+        logger.error('Error creating bot.');
+        throw error;
     }
-
-    const proxyUrl = process.env.SOCKS_PROXY;
-    const agent = new SocksProxyAgent(proxyUrl);
-
-    const bot = new Bot(process.env.BOT_TOKEN);
-
-    bot.use(mainRoutes);
-
-    return bot;
 }
 
 module.exports = createBot;

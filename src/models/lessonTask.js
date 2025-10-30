@@ -41,8 +41,8 @@ const LessonTask = sequelize.define('LessonTask', {
     },
     // Сложность задания
     difficulty: {
-        type: DataTypes.ENUM('easy', 'medium', 'hard'),
-        defaultValue: 'medium'
+        type: DataTypes.ENUM('начальная', 'легкая', 'средняя', 'продвинутая'),
+        defaultValue: 'средняя'
     },
     lessonId: {
         type: DataTypes.INTEGER,

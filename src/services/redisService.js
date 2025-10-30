@@ -1,5 +1,5 @@
 const { createClient } = require('redis');
-
+const logger = require('../logger/logger');
 class RedisService {
     constructor() {
         this.client = null;
@@ -14,7 +14,7 @@ class RedisService {
 
         this.client.on('error', (err) => console.log('Redis Client Error', err));
         await this.client.connect();
-        console.log('Connected to Redis');
+        logger.info('Redis Client Connected.');
     }
 
     // Ключи для хранения

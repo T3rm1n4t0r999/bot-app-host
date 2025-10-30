@@ -32,7 +32,7 @@ class KeyboardFactory {
 
         // Добавляем курсы текущей страницы
         currentCourses.forEach(course => {
-            keyboard.text(course.title, `view_course:${course.id}`).row();
+            keyboard.text(course.title, `view_course_modules:${course.id}:1`).row();
         });
 
         // Добавляем кнопки навигации
@@ -70,14 +70,37 @@ class KeyboardFactory {
      * @param {number} courseId - ID курса
      * @returns {InlineKeyboard}
      */
-    static createModulesKeyboard(modules = [], courseId) {
+    static createModulesKeyboard(modules = [], courseId, currentPage=1, totalPages=1) {
         const keyboard = new InlineKeyboard();
 
         modules.forEach(module => {
             keyboard.text(module.title, `view_module:${module.id}`).row();
         });
 
-        // Добавляем кнопку "Назад к курсам"
+        // Добавляем пагинацию если нужно
+        if (totalPages > 1) {
+            const paginationRow = [];
+
+
+            if (currentPage > 1) {
+                paginationRow.push(
+                    InlineKeyboard.text('◀️ Назад', `view_course_modules:${courseId}:${currentPage - 1}`)
+                );
+            }
+
+            paginationRow.push(
+                InlineKeyboard.text(`${currentPage}/${totalPages}`, `modules_info`)
+            );
+
+            if (currentPage < totalPages) {
+                paginationRow.push(
+                    InlineKeyboard.text('Вперед ▶️', `view_course_modules:${courseId}:${currentPage + 1}`)
+                );
+            }
+            keyboard.add(...paginationRow);
+        }
+
+        keyboard.row()
         keyboard.text('🔙 К курсам', 'back_to_courses');
 
         return keyboard;
@@ -125,7 +148,7 @@ class KeyboardFactory {
             .text('Задания', `view_lesson_task:${lessonId}`);
     }
 
-    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions) {
+    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions, answered, lessonId) {
         const keyboard = new InlineKeyboard();
         const options = typeof taskQuestion.options === 'string'
             ? JSON.parse(taskQuestion.options)
@@ -168,10 +191,21 @@ class KeyboardFactory {
 
         // Дополнительные кнопки
         keyboard.row();
-        keyboard.text('📊 Прогресс', `show_progress:${taskId}`);
+        keyboard.text(`📊${answered}/${totalQuestions}`);
         keyboard.text('🔁 Начать заново', `restart_task:${taskId}`);
+        keyboard.text('📋 К заданию', `view_lesson_task:${lessonId}`)
 
         return keyboard;
+    }
+
+    /**
+     * Клавиатура для задания
+     */
+    static createTaskKeyboard(lessonId, taskId){
+        return new InlineKeyboard()
+            .text('🔙 К уроку', `view_lesson:${lessonId}`)
+            .text('Начать выполнение', `view_task_questions:${taskId}`)
+            .row();
     }
 
     /**
