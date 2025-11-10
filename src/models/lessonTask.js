@@ -56,7 +56,9 @@ const LessonTask = sequelize.define('LessonTask', {
     updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'lesson_task',
-    timestamps: false
+    timestamps: false,
 });
+
+
 
 module.exports = LessonTask;

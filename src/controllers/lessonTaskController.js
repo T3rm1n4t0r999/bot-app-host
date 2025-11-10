@@ -3,8 +3,12 @@ const KeyboardFactory = require("../services/keyboardFactory");
 const LessonService = require("../services/lessonService");
 const TaskService = require("../services/taskService");
 const {InlineKeyboard} = require("grammy");
+const StudentService = require("../services/studentService");
+
+const studentService = new StudentService();
 const lessonService = new LessonService();
 const taskService = new TaskService();
+
 class LessonTaskController {
     static async handleCallbackQuery(ctx) {
         try {
@@ -85,7 +89,7 @@ class LessonTaskController {
             const task = tasks[0]
             const keyboard = KeyboardFactory.createTaskKeyboard(lessonId, task.id);
             const message = 'Задание урока:\n\n'+
-                                    `📖 *Название*\\: ${task.title}\n`+
+                                    `📖 *Название*: ${task.title}\n`+
                                     `🏆 *Максимально баллов*: ${task.maxScore}\n`+
                                     `⭐ *Сложность*: ${task.difficulty}\n`;
 
@@ -333,13 +337,13 @@ class LessonTaskController {
             }
 
             let earnedPoints = 0;
-            let totalAutoPoints = 0;
+            let maxPoints = 0;
 
             for (const qId of questionIds) {
                 const question = await lessonService.getTaskQuestionById(qId);
                 const qPoints = question.points || 0;
                 if (question.questionType === 'single_choice' || question.questionType === 'multiple_choice') {
-                    totalAutoPoints += qPoints;
+                    maxPoints += qPoints;
                     const correct = Array.isArray(question.correctAnswers)
                         ? question.correctAnswers
                         : (typeof question.correctAnswers === 'string' ? JSON.parse(question.correctAnswers) : []);
@@ -353,34 +357,35 @@ class LessonTaskController {
             }
 
             const resultsLines = [];
-            resultsLines.push(`Результат: ${earnedPoints}/${totalAutoPoints}`);
+            resultsLines.push(`Результат: ${earnedPoints}/${maxPoints}`);
 
             if (studentId) {
                 // Сохраняем прогресс/результаты в БД
                 const { progress: studentProgress, created } = await taskService.findOrCreateProgress(studentId, taskId);
-
+                let maxPrevPoints = studentProgress.points;
                 let shouldSave = false;
 
                 if (created) {
                     // Первое прохождение - всегда сохраняем
                     shouldSave = true;
                     resultsLines.push(`🎯 Первая попытка!`);
-                } else if (studentProgress.progress < earnedPoints) {
+                } else if (maxPrevPoints < earnedPoints) {
                     // Новый рекорд
                     shouldSave = true;
-                    resultsLines.push(`🎉 Новый рекорд! Предыдущий результат: ${studentProgress.progress}/${totalAutoPoints}`);
-                } else if (studentProgress.progress === earnedPoints) {
-                    resultsLines.push(`📊 Такой же результат как в предыдущей попытке: ${earnedPoints}/${totalAutoPoints}`);
+                    resultsLines.push(`🎉 Новый рекорд! Предыдущий результат: ${maxPrevPoints}/${maxPoints}`);
+                } else if (maxPrevPoints === earnedPoints) {
+                    resultsLines.push(`📊 Такой же результат как в предыдущей попытке: ${earnedPoints}/${maxPoints}`);
                 } else {
-                    resultsLines.push(`📊 Текущий результат: ${earnedPoints}/${totalAutoPoints} (лучший: ${studentProgress.progress}/${totalAutoPoints})`);
+                    resultsLines.push(`📊 Текущий результат: ${earnedPoints}/${maxPoints} (лучший: ${maxPrevPoints}/${maxPoints})`);
                 }
 
                 if (shouldSave) {
+                    const pointsAward = earnedPoints - maxPrevPoints;
+                    console.log(earnedPoints, maxPrevPoints, maxPoints);
+                    const awardedStudent = await studentService.addPoints(studentId, pointsAward);
                     const completed_task = await taskService.completeTask(studentId, taskId, {
-                        correctCount: earnedPoints,
-                        totalCount: totalAutoPoints,
-                        grade: earnedPoints,
-                        answers
+                        points: pointsAward,
+                        answers: answers,
                     });
                 }
             }

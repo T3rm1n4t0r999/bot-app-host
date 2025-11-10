@@ -21,6 +21,7 @@ class StudentProgressRepository extends BaseRepository {
                     status: 'in_progress',
                     progress: 0,
                     startedAt: new Date(),
+                    points:0,
                     ...defaults
                 }
             });
@@ -174,13 +175,13 @@ class StudentProgressRepository extends BaseRepository {
      */
     async completeTask(studentId, taskId, results) {
         try {
-            const { correctCount, totalCount, grade, answers } = results;
+            const { points, answers } = results;
 
             return await this.updateProgress(studentId, taskId, {
                 status: 'completed',
-                progress: correctCount,
-                answers,
-                grade,
+                answers: answers,
+                points: points,
+                progress: 100,
                 completedAt: new Date()
             });
         } catch (error) {

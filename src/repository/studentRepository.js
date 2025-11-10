@@ -61,6 +61,17 @@ class StudentRepository extends BaseRepository {
             throw error;
         }
     }
+
+    async addPoints(studentId, points) {
+        try {
+            return await this.increment('score', {
+                by: points,
+                where: {id: studentId}
+            })
+        } catch (e) {
+            throw e;
+        }
+    }
 }
 
 module.exports = StudentRepository;

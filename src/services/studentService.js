@@ -176,6 +176,15 @@ class StudentService {
             throw error;
         }
     }
+
+    async addPoints(studentId, points) {
+        try {
+            return await this.studentRepository.addPoints(studentId, points);
+        } catch (e) {
+            logger.error(e);
+            throw e;
+        }
+    }
 }
 
 module.exports = StudentService;

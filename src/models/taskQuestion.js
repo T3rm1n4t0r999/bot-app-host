@@ -54,7 +54,8 @@ const TaskQuestion = sequelize.define('TaskQuestion', {
     updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
 }, {
     tableName: 'task_questions',
-    timestamps: false
+    timestamps: false,
+
 });
 
 module.exports = TaskQuestion;

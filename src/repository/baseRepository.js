@@ -8,6 +8,27 @@ class BaseRepository {
     }
 
     /**
+     * Увеличить значение поля
+     * @param {string} field - Поле для увеличения
+     * @param {Object} options - Опции { by: number, where: Object, transaction: Object }
+     * @returns {Promise<Array>}
+     */
+    async increment(field, options = {}) {
+        try {
+            const { by = 1, where = {}} = options;
+
+            return await this.model.increment(field, {
+                by,
+                where,
+            });
+        } catch (error) {
+            logger.error(`Error incrementing ${field} in ${this.model.name}:`, error);
+            throw error;
+        }
+    }
+
+
+    /**
      * Найти запись по ID
      * @param {number} id - ID записи
      * @param {Object} options - Дополнительные опции для запроса

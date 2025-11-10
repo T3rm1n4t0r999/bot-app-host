@@ -31,13 +31,13 @@ class LessonMaterialRepository extends BaseRepository {
 
     /**
      * Получить обучающие материалы с файлами
-     * @param {number} lessonId - ID урока
+     * @param {number} materialId - ID материала
      * @returns {Promise<Array>}
      */
-    async findByLessonIdWithFiles(lessonId) {
+    async findMaterialByIdWithFiles(materialId) {
         try {
             return await this.findByCondition(
-                { lessonId },
+                { materialId },
                 {
                     include: [{
                         model: File,
@@ -48,7 +48,7 @@ class LessonMaterialRepository extends BaseRepository {
                 }
             );
         } catch (error) {
-            console.error('Error finding lesson materials with files:', error);
+            console.error('Error finding material with files:', error);
             throw error;
         }
     }

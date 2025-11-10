@@ -64,6 +64,12 @@ class KeyboardFactory {
         return keyboard;
     }
 
+    static createLessonMaterialNavigationKeyboard(lessonId) {
+        const keyboard = new InlineKeyboard();
+        keyboard.text('К материалам', `back_to_materials:${material.lessonId}`).row();
+        return keyboard;
+    }
+
     /**
      * Создает клавиатуру для модулей курса
      * @param {Array} modules - Массив модулей
@@ -144,7 +150,7 @@ class KeyboardFactory {
     static createLessonNavigationKeyboard(moduleId, lessonId) {
         return new InlineKeyboard()
             .text('🔙 К урокам', `back_to_lessons:${moduleId}`)
-            .text('Обучающие материалы', `view_lesson_materials:${lessonId}`)
+            .text('Обучающие материалы', `view_materials:${lessonId}`)
             .text('Задания', `view_lesson_task:${lessonId}`);
     }
 

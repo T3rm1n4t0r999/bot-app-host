@@ -299,7 +299,7 @@ class DatabaseSeeder {
 
         this.lessons.forEach((lesson, index) => {
             // Создаем задания для каждого урока
-            const difficulties = ['easy', 'medium', 'hard'];
+            const difficulties = ['начальная', 'легкая', 'средняя', 'продвинутая'];
             const difficulty = difficulties[index % difficulties.length];
 
             tasksData.push({

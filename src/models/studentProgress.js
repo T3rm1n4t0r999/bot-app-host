@@ -43,7 +43,7 @@ const StudentProgress = sequelize.define('StudentProgress', {
         allowNull: true
     },
     // Оценка
-    grade: {
+    points: {
         type: DataTypes.INTEGER,
         allowNull: true
     },
