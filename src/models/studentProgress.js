@@ -8,48 +8,16 @@ const StudentProgress = sequelize.define('StudentProgress', {
         primaryKey: true,
         autoIncrement: true
     },
-    // Статус выполнения задания
-    status: {
-        type: DataTypes.ENUM('not_started', 'in_progress', 'completed', 'graded'),
-        defaultValue: 'not_started'
-    },
-    // Прогресс в процентах
-    progress: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        validate: {
-            min: 0,
-            max: 100
-        }
-    },
-    // Ответы студента (JSON структура)
     answers: {
         type: DataTypes.JSONB,
         allowNull: true
     },
-    // Прикрепленные файлы студента
     attachedFiles: {
         type: DataTypes.JSONB,
         allowNull: true
     },
-    // Дата начала выполнения
-    startedAt: {
-        type: DataTypes.DATE,
-        allowNull: true
-    },
-    // Дата завершения
-    completedAt: {
-        type: DataTypes.DATE,
-        allowNull: true
-    },
-    // Оценка
     points: {
         type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    // Комментарии преподавателя
-    teacherFeedback: {
-        type: DataTypes.TEXT,
         allowNull: true
     },
     studentId: {
@@ -70,10 +38,11 @@ const StudentProgress = sequelize.define('StudentProgress', {
     }
 }, {
     tableName: 'student_progress',
-    timestamps: true,
+    timestamps: false,
+    underscored: true,
     indexes: [
         {
-            fields: ['studentId', 'taskId'],
+            fields: ['student_id', 'task_id'],
             unique: true
         }
     ]

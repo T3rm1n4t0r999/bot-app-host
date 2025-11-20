@@ -19,30 +19,9 @@ const LessonTask = sequelize.define('LessonTask', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    // Инструкции по выполнению задания
-    instructions: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    // Максимальное количество баллов
     maxScore: {
         type: DataTypes.INTEGER,
-        defaultValue: 10
-    },
-    // Оценочные критерии
-    gradingCriteria: {
-        type: DataTypes.JSONB,
-        allowNull: true
-    },
-    // Время на выполнение (в минутах)
-    estimatedTime: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    // Сложность задания
-    difficulty: {
-        type: DataTypes.ENUM('начальная', 'легкая', 'средняя', 'продвинутая'),
-        defaultValue: 'средняя'
+        defaultValue: 0
     },
     lessonId: {
         type: DataTypes.INTEGER,
@@ -51,12 +30,11 @@ const LessonTask = sequelize.define('LessonTask', {
             model: 'lessons',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'lesson_task',
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
 });
 
 

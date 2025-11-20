@@ -62,7 +62,7 @@ class StudentRepository extends BaseRepository {
         }
     }
 
-    async addPoints(studentId, points) {
+    async addPoints(studentId, points, options = {}) {
         try {
             return await this.increment('score', {
                 by: points,

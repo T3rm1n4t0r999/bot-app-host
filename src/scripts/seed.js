@@ -9,11 +9,13 @@ class DatabaseSeeder {
         this.lessonMaterials = [];
         this.tasks = [];
         this.questions = [];
+        this.student = null
         this.models = {};
     }
 
     async initializeModels() {
         // Инициализируем модели после установки соединения
+        this.models.Student = require('../models/student');
         this.models.Course = require('../models/course');
         this.models.Module = require('../models/module');
         this.models.Lesson = require('../models/lesson');
@@ -51,6 +53,7 @@ class DatabaseSeeder {
             await this.clearDatabase();
 
             //Создаем тестовые данные
+            await this.createStudent();
             await this.createCourses();
             await this.createModules();
             await this.createLessons();
@@ -79,6 +82,7 @@ class DatabaseSeeder {
         console.log('🧹 Очищаем базу данных...');
 
         // Удаляем данные в правильном порядке (с учетом foreign keys)
+        await this.models.Student.destroy({where: {}, force: true});
         await this.models.StudentProgress.destroy({ where: {}, force: true });
         await this.models.TaskQuestion.destroy({ where: {}, force: true });
         await this.models.LessonTask.destroy({ where: {}, force: true });
@@ -173,28 +177,16 @@ class DatabaseSeeder {
             {
                 title: 'Что такое программирование?',
                 description: 'Основные понятия и история развития',
-                objectives: JSON.stringify(['Понимать основные термины', 'Знать историю развития']),
-                prerequisites: JSON.stringify(['Базовые знания компьютера']),
-                duration: 45,
-                status: 'published',
                 moduleId: this.modules[0].id
             },
             {
                 title: 'Переменные и типы данных',
                 description: 'Работа с данными в программах',
-                objectives: JSON.stringify(['Уметь объявлять переменные', 'Знать основные типы данных']),
-                prerequisites: JSON.stringify(['Урок 1']),
-                duration: 60,
-                status: 'published',
                 moduleId: this.modules[0].id
             },
             {
                 title: 'Условные операторы',
                 description: 'Принятие решений в программах',
-                objectives: JSON.stringify(['Понимать логические операторы', 'Уметь использовать if/else']),
-                prerequisites: JSON.stringify(['Урок 2']),
-                duration: 75,
-                status: 'published',
                 moduleId: this.modules[0].id
             }
         );
@@ -204,15 +196,11 @@ class DatabaseSeeder {
             {
                 title: 'Линейные алгоритмы',
                 description: 'Последовательное выполнение операций',
-                duration: 50,
-                status: 'published',
                 moduleId: this.modules[1].id
             },
             {
                 title: 'Массивы и списки',
                 description: 'Работа с коллекциями данных',
-                duration: 80,
-                status: 'published',
                 moduleId: this.modules[1].id
             }
         );
@@ -222,15 +210,11 @@ class DatabaseSeeder {
             {
                 title: 'Структура HTML документа',
                 description: 'Основы разметки веб-страниц',
-                duration: 40,
-                status: 'published',
                 moduleId: this.modules[3].id
             },
             {
                 title: 'CSS селекторы и свойства',
                 description: 'Стилизация элементов',
-                duration: 65,
-                status: 'published',
                 moduleId: this.modules[3].id
             }
         );
@@ -298,17 +282,9 @@ class DatabaseSeeder {
         const tasksData = [];
 
         this.lessons.forEach((lesson, index) => {
-            // Создаем задания для каждого урока
-            const difficulties = ['начальная', 'легкая', 'средняя', 'продвинутая'];
-            const difficulty = difficulties[index % difficulties.length];
-
             tasksData.push({
                 title: `Практическое задание: ${lesson.title}`,
                 description: `Примените полученные знания на практике в этом задании.`,
-                instructions: `Внимательно прочитайте условие задачи. Используйте изученные концепции для решения. Не забудьте проверить свое решение.`,
-                maxScore: [5, 10, 15][index % 3],
-                estimatedTime: [30, 45, 60][index % 3],
-                difficulty: difficulty,
                 lessonId: lesson.id
             });
         });
@@ -372,6 +348,15 @@ class DatabaseSeeder {
 
         this.questions = await this.models.TaskQuestion.bulkCreate(questionsData);
         console.log(`✅ Создано ${this.questions.length} вопросов`);
+    }
+
+    async createStudent() {
+        const studentData = {
+            id: 1,
+            telegram_id: "5295612007",
+            firstname:"Кузя"
+        };
+        this.student = await this.models.Student.create(studentData);
     }
 }
 

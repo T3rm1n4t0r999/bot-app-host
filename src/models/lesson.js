@@ -19,40 +19,6 @@ const Lesson = sequelize.define('Lesson', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    // Цели урока
-    objectives: {
-        type: DataTypes.JSONB,
-        allowNull: true
-    },
-    // Предварительные требования
-    prerequisites: {
-        type: DataTypes.JSONB,
-        allowNull: true
-    },
-    // Продолжительность урока (в минутах)
-    duration: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    // Статус публикации (draft, published, archived)
-    status: {
-        type: DataTypes.ENUM('draft', 'published', 'archived'),
-        defaultValue: 'draft'
-    },
-    // Статус выполнения (для конкретного студента)
-    completionStatus: {
-        type: DataTypes.ENUM('not_started', 'in_progress', 'completed'),
-        defaultValue: 'not_started'
-    },
-    // Прогресс выполнения в процентах
-    progress: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        validate: {
-            min: 0,
-            max: 100
-        }
-    },
     moduleId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -60,12 +26,11 @@ const Lesson = sequelize.define('Lesson', {
             model: 'modules',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'lessons',
-    timestamps: false
+    timestamps: true,
+    underscored: true,
 });
 
 module.exports = Lesson;

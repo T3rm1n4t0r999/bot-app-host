@@ -19,12 +19,10 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    // Порядок материалов внутри урока
     order: {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
-    // Тип материала (theory, example, reference, etc.)
     materialType: {
         type: DataTypes.ENUM('theory', 'example', 'reference', 'video_lesson', 'article'),
         defaultValue: 'theory'
@@ -36,12 +34,11 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
             model: 'lessons',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'lesson_materials',
-    timestamps: false
+    timestamps: true,
+    underscored: true,
 });
 
 module.exports = LessonMaterial;

@@ -12,32 +12,22 @@ const TaskQuestion = sequelize.define('TaskQuestion', {
         type: DataTypes.TEXT,
         allowNull: false
     },
-    // Тип вопроса (single_choice, multiple_choice, text, code)
     questionType: {
-        type: DataTypes.ENUM('single_choice', 'multiple_choice', 'text', 'code', 'file_upload'),
+        type: DataTypes.ENUM('single_choice', 'multiple_choice', 'text'),
         defaultValue: 'text'
     },
-    // Варианты ответов (для choice типов)
     options: {
         type: DataTypes.JSONB,
         allowNull: true
     },
-    // Правильные ответы
     correctAnswers: {
         type: DataTypes.JSONB,
         allowNull: true
     },
-    // Баллы за вопрос
     points: {
         type: DataTypes.INTEGER,
         defaultValue: 1
     },
-    // Объяснение правильного ответа
-    explanation: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    // Порядок вопроса
     order: {
         type: DataTypes.INTEGER,
         defaultValue: 0
@@ -49,12 +39,11 @@ const TaskQuestion = sequelize.define('TaskQuestion', {
             model: 'lesson_task',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'task_questions',
     timestamps: false,
+    underscored: true,
 
 });
 

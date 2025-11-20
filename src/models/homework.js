@@ -16,22 +16,9 @@ const Homework = sequelize.define('Homework', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    instructions: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
     maxScore: {
         type: DataTypes.INTEGER,
         defaultValue: 10
-    },
-    deadline: {
-        type: DataTypes.DATE,
-        allowNull: true
-    },
-    // Дополнительные настройки
-    settings: {
-        type: DataTypes.JSONB,
-        defaultValue: {}
     },
     lessonId: {
         type: DataTypes.INTEGER,
@@ -40,12 +27,11 @@ const Homework = sequelize.define('Homework', {
             model: 'lessons',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'homeworks',
-    timestamps: false
+    timestamps: true,
+    underscored: true,
 });
 
 module.exports = Homework;

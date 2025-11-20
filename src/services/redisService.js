@@ -67,42 +67,37 @@ class RedisService {
         }
     }
 
-    async toggleUserOption(userId, questionId, optionIndex) {
+    // В RedisService добавьте методы для работы с ключами
+    async toggleUserOption(userId, questionId, optionKey) {
         const key = this.getUserQuestionKey(userId, questionId);
-        // Преобразуем optionIndex в строку
-        const optionIndexStr = optionIndex.toString();
-        const isMember = await this.client.sIsMember(key, optionIndexStr);
+        const isMember = await this.client.sIsMember(key, optionKey);
 
         if (isMember) {
-            await this.client.sRem(key, optionIndexStr);
+            await this.client.sRem(key, optionKey);
         } else {
-            await this.client.sAdd(key, optionIndexStr);
+            await this.client.sAdd(key, optionKey);
         }
 
         await this.client.expire(key, this.TTL);
         return !isMember;
     }
 
-    async setUserOption(userId, questionId, optionIndex) {
+    async setUserOption(userId, questionId, optionKey) {
         const key = this.getUserQuestionKey(userId, questionId);
-        // Преобразуем optionIndex в строку
-        const optionIndexStr = optionIndex.toString();
         await this.client.del(key);
-        await this.client.sAdd(key, optionIndexStr);
+        await this.client.sAdd(key, optionKey);
         await this.client.expire(key, this.TTL);
     }
 
     async getUserSelectedOptions(userId, questionId) {
         const key = this.getUserQuestionKey(userId, questionId);
-        const members = await this.client.sMembers(key);
-        // Преобразуем строки обратно в числа
-        return members.map(Number).sort((a, b) => a - b);
+        return await this.client.sMembers(key);
     }
 
     async getUserSelectedOption(userId, questionId) {
         const key = this.getUserQuestionKey(userId, questionId);
         const members = await this.client.sMembers(key);
-        return members.length > 0 ? Number(members[0]) : null;
+        return members.length > 0 ? members[0] : null;
     }
 
     // Ответы на вопросы (text/code)

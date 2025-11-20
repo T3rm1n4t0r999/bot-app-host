@@ -1,8 +1,12 @@
 const {InlineKeyboard} = require("grammy");
 const LessonService = require("../services/lessonService");
-
+const KeyboardFactory = require("../services/keyboardFactory");
 const lessonService = new LessonService();
 
+/**
+ * Обработка callback queries для курсов и модулей
+ * @param {import('grammy').Context} ctx - Контекст бота
+ */
 class LessonMaterialController {
     static async handleCallbackQuery(ctx) {
         try {
@@ -23,6 +27,11 @@ class LessonMaterialController {
         }
     }
 
+    /**
+     * Показать материалы курса
+     * @param {import('grammy').Context} ctx - Контекст бота
+     * @param lessonId - ID урока
+     */
     static async showLessonMaterials(ctx, lessonId) {
         try {
             const materials = await lessonService.getLessonMaterialsByLessonId(lessonId);
@@ -51,99 +60,40 @@ class LessonMaterialController {
         }
     }
 
+    /**
+     * Показать материалы курса
+     * @param {import('grammy').Context} ctx - Контекст бота
+     * @param materialId - ID материала
+     */
     static async showLessonMaterial(ctx, materialId) {
         try {
-            const material = await lessonService.getMaterialByIdWithFiles(materialId);
+            const material = await lessonService.getByIdWithFiles(materialId);
             if (!material) {
-                await ctx.answerCallbackQuery("Материал не найден");
-                return
+                await ctx.answerCallbackQuery("❌ Материал не найден");
+                return;
             }
-            let message = `Название урока: ${material.title}\nОписание урока: ${material.content}`;
 
+            const message = `*${material.title}*\n\n${material.content || 'Описание отсутствует'}`;
             const lessonId = material.lessonId;
-            const keyboard = KeyboardFactory.createLessonMaterialNavigationKeyboard(lessonId)
+            const keyboard = KeyboardFactory.createLessonMaterialNavigationKeyboard(lessonId);
 
-            const files = material.files;
-            // Если есть файлы, отправляем их
-            if (files && files.length > 0) {
-                await LessonMaterialController.sendFilesWithMessage(ctx, files, message, keyboard);
-            } else {
-                // Если файлов нет, отправляем только текст
-                await ctx.editMessageText(message, {
-                    reply_markup: keyboard,
-                    parse_mode: 'Markdown'
-                });
-            }
-            await ctx.answerCallbackQuery();
-        } catch (e) {
-        }
-    }
-
-    static async sendFilesWithMessage(ctx, files, message, keyboard) {
-        try {
-            const sortedFiles = files.sort((a, b) => a.order - b.order);
-
-            // Разделяем файлы по типам для медиагруппы
-            const mediaGroup = [];
-
-            sortedFiles.forEach((file, index) => {
-                if (index === 0 && (file.fileType === 'photo' || file.fileType === 'video')) {
-                    // Первый файл (фото/видео) с сообщением
-                    const mediaItem = {
-                        type: file.fileType,
-                        media: file.fileId,
-                        caption: index === 0 ? message : file.caption,
-                        parse_mode: 'Markdown'
-                    };
-                    mediaGroup.push(mediaItem);
-                } else if (file.fileType === 'photo' || file.fileType === 'video') {
-                    // Остальные фото/видео
-                    const mediaItem = {
-                        type: file.fileType,
-                        media: file.fileId,
-                        caption: file.caption,
-                        parse_mode: 'Markdown'
-                    };
-                    mediaGroup.push(mediaItem);
-                } else {
-                    // Другие типы файлов
-                    otherFiles.push(file);
-                }
+            await ctx.editMessageText(message, {
+                reply_markup: keyboard,
+                parse_mode: 'Markdown'
             });
 
-            // Отправляем медиагруппу если есть фото/видео
-            if (mediaGroup.length > 0) {
-                if (mediaGroup.length === 1) {
-                    // Если только один файл, отправляем отдельно с клавиатурой
-                    const file = sortedFiles[0];
-                    const options = {
-                        caption: message,
-                        parse_mode: 'Markdown',
-                        reply_markup: keyboard
-                    };
-
-                    if (file.fileType === 'photo') {
-                        await ctx.replyWithPhoto(file.fileId, options);
-                    } else {
-                        await ctx.replyWithVideo(file.fileId, options);
-                    }
-                } else {
-                    // Если несколько файлов, отправляем медиагруппу
-                    await ctx.replyWithMediaGroup(mediaGroup);
-
-                    // Отправляем клавиатуру отдельным сообщением
-                    if (keyboard) {
-                        await ctx.reply('📎 Файлы урока:', {
-                            reply_markup: keyboard
-                        });
-                    }
-                }
-            }
+            await ctx.answerCallbackQuery();
         } catch (error) {
-            console.error('Error sending media group:', error);
+            console.error('Error showing lesson material:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при загрузке материала');
         }
     }
 
+    /**
+     * Вернуться к материалам урока
+     * @param {import('grammy').Context} ctx - Контекст бота
+     * @param lessonId - ID материала
+     */
     static async backToMaterials(ctx, lessonId) {
         try {
             const lesson = await lessonService.getLessonById(lessonId);

@@ -96,11 +96,12 @@ class BaseRepository {
     /**
      * Создать новую запись
      * @param {Object} data - Данные для создания
+     * @param options
      * @returns {Promise<Object>}
      */
-    async create(data) {
+    async create(data, options = {}) {
         try {
-            return await this.model.create(data);
+            return await this.model.create(data, options);
         } catch (error) {
             logger.error(`Error creating ${this.model.name}:`);
             throw error;
@@ -111,37 +112,19 @@ class BaseRepository {
      * Обновить запись
      * @param {number} id - ID записи
      * @param {Object} data - Данные для обновления
+     * @param options
      * @returns {Promise<Object|null>}
      */
-    async update(id, data) {
+    async update(id, data, options = {}) {
         try {
             const record = await this.findById(id);
             if (!record) {
                 return null;
             }
-            await record.update(data);
+            await record.update(data, options);
             return record;
         } catch (error) {
             logger.error(`Error updating ${this.model.name}:`);
-            throw error;
-        }
-    }
-
-    /**
-     * Удалить запись
-     * @param {number} id - ID записи
-     * @returns {Promise<boolean>}
-     */
-    async delete(id) {
-        try {
-            const record = await this.findById(id);
-            if (!record) {
-                return false;
-            }
-            await record.destroy();
-            return true;
-        } catch (error) {
-            logger.error(`Error deleting ${this.model.name}:`);
             throw error;
         }
     }

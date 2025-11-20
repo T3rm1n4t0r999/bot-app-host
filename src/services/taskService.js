@@ -1,7 +1,7 @@
 const LessonService = require("./lessonService");
 const StudentProgressRepository = require("../repository/studentProgressRepository");
-const progressRepo = require("../repository/studentProgressRepository");
-
+const {sequelize} = require("../database/db");
+const logger = require("../logger/logger");
 class TaskService{
     constructor(){
         this.lessonService = new LessonService();
@@ -9,19 +9,27 @@ class TaskService{
     }
 
     async findOrCreateProgress(studentId, taskId){
+        const transaction = await sequelize.transaction();
         try {
-            return await this.progressRepo.findOrCreateProgress(studentId, taskId);
+            const progress = await this.progressRepo.findOrCreateProgress(studentId, taskId, {transaction});
+            await transaction.commit();
+            return progress;
         } catch (e) {
-            console.error('Error finding or creating student progress:', e);
+            await transaction.rollback();
+            logger.error('Error finding or creating student progress:', e);
             throw e;
         }
     }
 
     async completeTask(studentId, taskId, result){
+        const transaction = await sequelize.transaction();
         try {
-            return await this.progressRepo.completeTask(studentId, taskId, result);
+            const completedTask = await this.progressRepo.completeTask(studentId, taskId, result, {transaction});
+            await transaction.commit();
+            return completedTask;
         } catch (e) {
-            console.error('Error complete task:', e);
+            await transaction.rollback();
+            logger.error('Error complete task:', e);
             throw e;
         }
     }

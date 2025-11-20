@@ -32,27 +32,15 @@ const StudentCourse = sequelize.define('StudentCourse', {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: new Date()
-    },
-    expiresAt: {
-        type: DataTypes.DATE,
-        allowNull: true
-    },
-    progress: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        defaultValue: 0
-    },
-    lastAccessed: {
-        type: DataTypes.DATE,
-        allowNull: true
     }
 }, {
     tableName: 'student_courses',
     timestamps: false,
+    underscored: true,
     indexes: [
         {
             unique: true,
-            fields: ['studentId', 'courseId']
+            fields: ['student_id', 'course_id']
         }
     ]
 });

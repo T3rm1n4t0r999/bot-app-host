@@ -10,21 +10,17 @@ class StudentProgressRepository extends BaseRepository {
      * Найти или создать прогресс студента по заданию
      * @param {number} studentId - ID студента
      * @param {number} taskId - ID задания
-     * @param {Object} defaults - Значения по умолчанию
+     * @param options
      * @returns {Promise<Object>}
      */
-    async findOrCreateProgress(studentId, taskId, defaults = {}) {
+    async findOrCreateProgress(studentId, taskId, options = {}) {
         try {
             const [progress, created] = await this.model.findOrCreate({
                 where: { studentId, taskId },
                 defaults: {
-                    status: 'in_progress',
-                    progress: 0,
-                    startedAt: new Date(),
                     points:0,
-                    ...defaults
                 }
-            });
+            }, options);
             return { progress, created };
         } catch (error) {
             console.error('Error finding or creating student progress:', error);
@@ -171,19 +167,17 @@ class StudentProgressRepository extends BaseRepository {
      * @param {number} studentId - ID студента
      * @param {number} taskId - ID задания
      * @param {Object} results - Результаты выполнения
+     * @param options
      * @returns {Promise<Object|null>}
      */
-    async completeTask(studentId, taskId, results) {
+    async completeTask(studentId, taskId, results, options ={}) {
         try {
             const { points, answers } = results;
 
             return await this.updateProgress(studentId, taskId, {
-                status: 'completed',
                 answers: answers,
                 points: points,
-                progress: 100,
-                completedAt: new Date()
-            });
+            }, options);
         } catch (error) {
             console.error('Error completing task:', error);
             throw error;

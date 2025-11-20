@@ -26,12 +26,11 @@ const Module = sequelize.define('Module', {
             model: 'courses',
             key: 'id'
         }
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'modules',
-    timestamps: false
+    underscored: true,
+    timestamps: true
 });
 
 

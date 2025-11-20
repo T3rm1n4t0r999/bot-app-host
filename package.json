@@ -4,7 +4,8 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "diag": "node src/utils/diagnosticAssociations.js"
   },
   "author": "",
   "license": "ISC",
@@ -12,6 +13,7 @@
   "dependencies": {
     "accesscontrol": "^2.2.1",
     "dotenv": "^17.2.0",
+    "express": "^5.1.0",
     "grammy": "^1.37.0",
     "node-cache": "^5.1.2",
     "pg": "^8.16.3",

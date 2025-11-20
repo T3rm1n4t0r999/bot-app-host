@@ -25,9 +25,9 @@ class LessonService {
             throw error;
         }
     }
-    async getMaterialByIdWithFiles(materialId, options = {}) {
+    async getByIdWithFiles(materialId, options = {}) {
         try {
-            return await this.lessonMaterialRepository.findMaterialByIdWithFiles(materialId, options);
+            return await this.lessonMaterialRepository.findByIdWithFiles(materialId, options);
         } catch (e) {
             console.error('Error getting material by material ID');
         }

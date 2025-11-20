@@ -2,7 +2,7 @@ const { ForbiddenError, AppError, UnauthorizedError} = require("../utils/errors"
 const errorHandler = require("../utils/errorHandler");
 const logger = require("../logger/logger");
 
-module.exports = function(allowedRoles = ['student', 'premium']) {
+module.exports = function(allowedRoles = ['student', 'premium', 'guest']) {
     return async (ctx, next) => {
         try {
             if (!ctx.state.student) {

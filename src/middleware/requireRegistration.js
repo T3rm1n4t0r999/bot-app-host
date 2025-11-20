@@ -1,7 +1,7 @@
 const {NotFoundError, UnauthorizedError, ValidationError} = require("../utils/errors");
 const StudentService = require("../services/studentService");
 const errorHandler = require("../utils/errorHandler");
-
+const logger = require("../logger/logger");
 // Создаем экземпляр сервиса
 const studentService = new StudentService();
 

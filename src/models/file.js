@@ -8,71 +8,53 @@ const File = sequelize.define('File', {
         primaryKey: true,
         autoIncrement: true
     },
-    // Уникальный идентификатор файла в Telegram
-    fileId: {
+    name: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        defaultValue: 'Файл'
     },
-    // Тип файла (photo, video, document, audio, etc.)
-    fileType: {
-        type: DataTypes.ENUM('photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation'),
+    path: {
+        type: DataTypes.STRING,
         allowNull: false
     },
-    // MIME тип файла
-    mimeType: {
+    disk: {
         type: DataTypes.STRING,
-        allowNull: true
+        allowNull: false,
+        defaultValue: 'public'
     },
-    // Оригинальное имя файла
-    fileName: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    // Размер файла в байтах
-    fileSize: {
+    size: {
         type: DataTypes.BIGINT,
         allowNull: true
     },
-    // Порядок файла в списке (для сортировки)
-    order: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
+    mime_type: {
+        type: DataTypes.STRING,
+        allowNull: true
     },
-    // ID сущности, к которой привязан файл
-    attachableId: {
+    extension: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    fileable_id: {
         type: DataTypes.INTEGER,
         allowNull: false
     },
-    // Тип сущности, к которой привязан файл
-    attachableType: {
+    fileable_type: {
         type: DataTypes.STRING,
         allowNull: false
-    },
-    // Дополнительная информация о файле (JSON)
-    fileInfo: {
-        type: DataTypes.JSONB,
-        allowNull: true
-    },
-    // Описание/подпись к файлу
-    caption: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    created_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
-    updated_at: {type: DataTypes.DATE, allowNull: false, defaultValue: new Date()},
+    }
 }, {
     tableName: 'files',
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
     indexes: [
         {
-            fields: ['attachableType', 'attachableId']
+            fields: ['fileable_type', 'fileable_id']
         },
         {
-            fields: ['fileId']
+            fields: ['fileable_type', 'fileable_id']
         },
         {
-            fields: ['attachableType', 'attachableId', 'order']
+            fields: ['mime_type']
         }
     ]
 });
