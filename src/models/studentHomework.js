@@ -1,37 +1,33 @@
-// models/Homework.js
+// models/studentHomework.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const Homework = sequelize.define('Homework', {
+const StudentHomework = sequelize.define('StudentHomework', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    title: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    maxScore: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    taskId: {
+    homeworkId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'lessonTask',
+            model: 'homeworks',
+            key: 'id'
+        }
+    },
+    studentId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'students',
             key: 'id'
         }
     }
 }, {
-    tableName: 'homeworks',
+    tableName: 'student_homework',
     timestamps: true,
     underscored: true,
 });
 
-module.exports = Homework;
+module.exports = StudentHomework;

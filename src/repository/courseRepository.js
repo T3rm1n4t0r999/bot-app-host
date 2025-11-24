@@ -106,37 +106,6 @@ class CourseRepository extends BaseRepository {
     }
 
     /**
-     * Получить курсы с пагинацией
-     * @param {number} page - Номер страницы
-     * @param {number} limit - Количество записей на странице
-     * @param {Object} where - Условия поиска
-     * @returns {Promise<Object>}
-     */
-    async findPaginated(page = 1, limit = 10, where = {}) {
-        try {
-            const offset = (page - 1) * limit;
-            const { count, rows } = await this.model.findAndCountAll({
-                where,
-                order: [['id', 'ASC']],
-                limit,
-                offset
-            });
-
-            return {
-                courses: rows,
-                totalCount: count,
-                totalPages: Math.ceil(count / limit),
-                currentPage: page,
-                hasNextPage: page < Math.ceil(count / limit),
-                hasPrevPage: page > 1
-            };
-        } catch (error) {
-            console.error('Error finding paginated courses:', error);
-            throw error;
-        }
-    }
-
-    /**
      * Получить количество студентов на курсе
      * @param {number} courseId - ID курса
      * @returns {Promise<number>}

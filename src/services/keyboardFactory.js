@@ -15,16 +15,88 @@ class KeyboardFactory {
     }
 
     /**
+     * Создает клавиатуру профиля
+     * @returns {Keyboard}
+     */
+    static createProfileKeyboard() {
+        return new InlineKeyboard().text('Таблица лидеров', 'show_leaderboard');
+    }
+
+    static createLeaderboardKeyboard(leaderboard, currentStudent) {
+        const keyboard = new InlineKeyboard();
+        leaderboard.forEach(student => {
+            let leaderText;
+            if(student.id === currentStudent.id) {
+                leaderText = `${student.username} - ${student.score} | Это вы!`
+            }
+            else leaderText = `${student.username} - ${student.score}`
+            keyboard.text(leaderText, `leaderboard:${student.id}`).row();
+        })
+        keyboard.text('Вернуться в профиль', `show_student_profile`).row();
+        return keyboard;
+    }
+
+    static createHomeworkTaskKeyboard(homeworkId) {
+        return new InlineKeyboard()
+            .text('🔙 К уроку', `back_to_homeworks`)
+            .text('Начать выполнение', `start_homework:${homeworkId}`);
+    }
+
+    /**
+     * Создает клавиатуру для домашних заданий с пагинацией
+     * @param {Array} homeworks - Массив курсов
+     * @param {number} currentPage - Текущая страница (начиная с 1)
+     * @param {number} itemsPerPage - Количество курсов на странице
+     * @returns {InlineKeyboard}
+     */
+    static createHomeworksKeyboard(homeworks = [], currentPage = 1, itemsPerPage = 4) {
+        const keyboard = new InlineKeyboard();
+        const totalPages = Math.ceil(homeworks.length / itemsPerPage);
+
+        currentPage = Math.max(1, Math.min(currentPage, totalPages));
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const currentHomeworks = homeworks.slice(startIndex, endIndex);
+
+        currentHomeworks.forEach(homework => {
+            keyboard.text(homework.title, `view_homework:${homework.id}:1`).row();
+        })
+        // Добавляем кнопки навигации
+        if (totalPages > 1) {
+            const navRow = [];
+
+            if (currentPage > 1) {
+                navRow.push(InlineKeyboard.text('⬅️', `homework_page:${currentPage - 1}`));
+            } else {
+                navRow.push(InlineKeyboard.text('🔙 К профилю', 'show_student_profile'));
+            }
+
+            navRow.push(InlineKeyboard.text(`${currentPage}/${totalPages}`, 'page_info_homework'));
+
+            if (currentPage < totalPages) {
+                navRow.push(InlineKeyboard.text('➡️', `homework_page:${currentPage + 1}`));
+            }
+
+            keyboard.row(...navRow);
+        } else if (homeworks.length > 0) {
+            keyboard.text('🔙 К профилю', `show_student_profile`);
+        }
+
+        return keyboard;
+    }
+
+    /**
      * Создает клавиатуру для курсов с пагинацией
      * @param {Array} courses - Массив курсов
      * @param {number} currentPage - Текущая страница (начиная с 1)
      * @param {number} itemsPerPage - Количество курсов на странице
      * @returns {InlineKeyboard}
      */
-    static createCoursesKeyboard(courses = [], currentPage = 1, itemsPerPage = 5) {
+    static createCoursesKeyboard(courses = [], currentPage = 1, itemsPerPage = 4) {
         const keyboard = new InlineKeyboard();
         const totalPages = Math.ceil(courses.length / itemsPerPage);
 
+        currentPage = Math.max(1, Math.min(currentPage, totalPages));
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const currentCourses = courses.slice(startIndex, endIndex);
@@ -38,20 +110,20 @@ class KeyboardFactory {
             const navRow = [];
 
             if (currentPage > 1) {
-                navRow.push(keyboard.text('⬅️', `courses_page:${currentPage - 1}`));
+                navRow.push(InlineKeyboard.text('⬅️', `courses_page:${currentPage - 1}`));
             } else {
-                navRow.push(keyboard.text('🔙 К профилю', 'back_to_profile'));
+                navRow.push(InlineKeyboard.text('🔙 К профилю', 'show_student_profile'));
             }
 
-            navRow.push(keyboard.text(`${currentPage}/${totalPages}`, 'page_info_courses'));
+            navRow.push(InlineKeyboard.text(`${currentPage}/${totalPages}`, 'page_info_courses'));
 
             if (currentPage < totalPages) {
-                navRow.push(keyboard.text('➡️', `courses_page:${currentPage + 1}`));
+                navRow.push(InlineKeyboard.text('➡️', `courses_page:${currentPage + 1}`));
             }
-            
+
             keyboard.row(...navRow);
         } else if (courses.length > 0) {
-            keyboard.text('🔙 К профилю', 'show_student_profile');
+            keyboard.text('🔙 К профилю', `show_student_profile`);
         }
 
         return keyboard;
@@ -71,9 +143,10 @@ class KeyboardFactory {
      * @param itemsPerPage
      * @returns {InlineKeyboard} - клавиатура
      */
-    static createModulesKeyboard(modules = [], courseId, currentPage=1, itemsPerPage = 5) {
+    static createModulesKeyboard(modules = [], courseId, currentPage=1, itemsPerPage = 4) {
         const keyboard = new InlineKeyboard();
         const totalPages = Math.ceil(modules.length / itemsPerPage);
+        currentPage = Math.max(1, Math.min(currentPage, totalPages));
 
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
@@ -151,48 +224,54 @@ class KeyboardFactory {
             .text('Задания', `view_lesson_task:${lessonId}`);
     }
 
-    static createQuestionNavigation(taskQuestion, taskId, currentIndex, totalQuestions, answered, lessonId) {
+    static createQuestionNavigation(question, entityId, currentIndex, totalQuestions, answered, entityType) {
         const keyboard = new InlineKeyboard();
-        const options = typeof taskQuestion.options === 'string'
-            ? JSON.parse(taskQuestion.options)
-            : taskQuestion.options;
+        const options = typeof question.options === 'string'
+            ? JSON.parse(question.options)
+            : question.options;
 
-        switch (taskQuestion.questionType) {
+        // Обработка различных типов вопросов
+        switch (question.questionType) {
             case "multiple_choice":
                 options.forEach(option => {
-                    const isSelected = Array.isArray(taskQuestion.userAnswer) && taskQuestion.userAnswer.includes(option.key);
+                    const isSelected = Array.isArray(question.userAnswer) && question.userAnswer.includes(option.key);
                     const icon = isSelected ? "✅" : "◻️";
-                    keyboard.text(`${icon} ${option.key}`, `toggle_multi:${taskQuestion.id}:${option.key}:${taskId}`);
+                    keyboard.text(`${icon} ${option.key}`, `question_toggle_multi:${entityType}:${question.id}:${option.key}:${entityId}`);
                 });
                 break;
 
             case "single_choice":
                 options.forEach(option => {
-                    const isSelected = taskQuestion.userAnswer === option.key;
+                    const isSelected = question.userAnswer === option.key;
                     const icon = isSelected ? "🔘" : "⚪";
-                    keyboard.text(`${icon} ${option.key}`, `select_single:${taskQuestion.id}:${option.key}:${taskId}`);
+                    keyboard.text(`${icon} ${option.key}`, `question_select_single:${entityType}:${question.id}:${option.key}:${entityId}`);
                 });
                 break;
+
             case "text":
-                keyboard.text('✍️ Ввести ответ текстом', `await_text:${taskQuestion.id}:${taskId}`);
+                const buttonText = question.questionType === 'code' ? '💻 Ввести код' : '✍️ Ввести ответ текстом';
+                const buttonIcon = question.userAnswer ? '📝' : '✍️';
+                keyboard.text(`${buttonIcon} ${buttonText}`, `question_await_text:${entityType}:${question.id}:${entityId}`);
                 break;
         }
 
+        // Навигация между вопросами
         keyboard.row();
         if (currentIndex > 0) {
-            keyboard.text('« Предыдущий', `nav_question:${taskId}:${currentIndex - 1}`);
+            keyboard.text('« Предыдущий', `question_nav:${entityType}:${entityId}:${currentIndex - 1}`);
         }
 
         if (currentIndex < totalQuestions - 1) {
-            keyboard.text('Следующий »', `nav_question:${taskId}:${currentIndex + 1}`);
+            keyboard.text('Следующий »', `question_nav:${entityType}:${entityId}:${currentIndex + 1}`);
         } else {
-            keyboard.text('✅ Завершить задание', `finish_task:${taskId}`);
+            keyboard.text('✅ Завершить', `question_finish:${entityType}:${entityId}`);
         }
 
+        // Дополнительные действия
         keyboard.row();
-        keyboard.text(`📊${answered}/${totalQuestions}`);
-        keyboard.text('🔁 Начать заново', `restart_task:${taskId}`);
-        keyboard.text('📋 К заданию', `view_lesson_task:${lessonId}`)
+        keyboard.text(`📊 ${answered}/${totalQuestions}`, `question_show_progress:${entityType}:${entityId}`);
+        keyboard.text('🔁 Заново', `question_restart:${entityType}:${entityId}`);
+        keyboard.text('📋 К заданию', `question_back_to_task:${entityType}:${entityId}`);
 
         return keyboard;
     }
@@ -200,29 +279,48 @@ class KeyboardFactory {
     /**
      * Клавиатура для задания
      */
-    static createTaskKeyboard(lessonId, taskId){
+    static createLessonTaskKeyboard(lessonId, taskId, entityType){
         return new InlineKeyboard()
             .text('🔙 К уроку', `view_lesson:${lessonId}`)
-            .text('Начать выполнение', `start_task:${taskId}`)
+            .text('Начать выполнение', `start_task:${taskId}:${entityType}`)
             .row();
     }
 
     /**
      * Клавиатура для результатов
      */
-    static createResultsKeyboard(taskId, lessonId) {
-        return new InlineKeyboard()
-            .text('🔄 Пройти заново', `restart_task:${taskId}`)
-            .text('📋 К заданию', `view_lesson_task:${lessonId}`)
-            .row();
+    static createResultsKeyboard(entityId, entityType) {
+        const keyboard = new InlineKeyboard();
+
+        // Основные действия
+        keyboard.text('🔄 Пройти заново', `question_restart:${entityType}:${entityId}`);
+
+        // Разные действия в зависимости от типа сущности
+        switch (entityType) {
+            case 'lesson_task':
+                keyboard.text('📚 К уроку', `view_lesson_task:${entityId}`);
+                break;
+            case 'homework':
+                keyboard.text('🏠 К домашнему заданию', `view_homework:${entityId}`);
+                break;
+            case 'training':
+                keyboard.text('💪 К тренажеру', `view_training:${entityId}`);
+                break;
+        }
+
+        keyboard.row();
+        keyboard.text('📊 Статистика', `show_statistics:${entityType}:${entityId}`);
+
+        return keyboard;
     }
 
     /**
      * Клавиатура для прогресса
      */
-    static createProgressKeyboard(taskId, currentIndex) {
+    static createProgressKeyboard(entityId, currentIndex, entityType) {
         return new InlineKeyboard()
-            .text('↩️ Назад к вопросу', `nav_question:${taskId}:${currentIndex}`)
+            .text('↩️ Назад к вопросу', `question_nav:${entityType}:${entityId}:${currentIndex}`)
+            .text('📋 К заданию', `question_back_to_task:${entityType}:${entityId}`)
             .row();
     }
 }

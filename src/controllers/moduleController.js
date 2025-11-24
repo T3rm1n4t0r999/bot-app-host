@@ -1,12 +1,9 @@
 const ModuleService = require("../services/moduleService");
 const KeyboardFactory = require("../services/keyboardFactory");
-const CourseController = require("./courseController");
-const LessonService = require("../services/lessonService");
 const logger = require('../logger/logger');
 const {InlineKeyboard} = require("grammy");
 
 const moduleService = new ModuleService();
-const lessonService = new LessonService();
 
 class ModuleController {
     /**

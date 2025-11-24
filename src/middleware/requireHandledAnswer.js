@@ -1,8 +1,8 @@
-const LessonTaskController = require("../controllers/lessonTaskController");
+const QuestionController = require("../controllers/QuestionController");
 
 function requireHandledAnswer(){
     return async(ctx,next) => {
-        const handled = await LessonTaskController.handleTextAnswer(ctx);
+        const handled = await QuestionController.handleTextAnswer(ctx);
         if (!handled) await next();
     }
 }

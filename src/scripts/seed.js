@@ -21,7 +21,7 @@ class DatabaseSeeder {
         this.models.Lesson = require('../models/lesson');
         this.models.LessonMaterial = require('../models/lessonMaterial');
         this.models.LessonTask = require('../models/lessonTask');
-        this.models.TaskQuestion = require('../models/taskQuestion');
+        this.models.TaskQuestion = require('../models/question');
         this.models.File = require('../models/file');
         this.models.StudentProgress = require('../models/studentProgress');
         this.models.StudentCourse = require('../models/studentCourse');

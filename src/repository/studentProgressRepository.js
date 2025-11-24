@@ -1,210 +1,62 @@
 const BaseRepository = require('./baseRepository');
 const StudentProgress = require('../models/studentProgress');
+const logger = require("../logger/logger");
 
 class StudentProgressRepository extends BaseRepository {
     constructor() {
         super(StudentProgress);
     }
 
-    /**
-     * Найти или создать прогресс студента по заданию
-     * @param {number} studentId - ID студента
-     * @param {number} taskId - ID задания
-     * @param options
-     * @returns {Promise<Object>}
-     */
-    async findOrCreateProgress(studentId, taskId, options = {}) {
+    async findBestResult(studentId, progressableType, progressableId) {
         try {
-            const [progress, created] = await this.model.findOrCreate({
-                where: { studentId, taskId },
-                defaults: {
-                    points:0,
-                }
-            }, options);
-            return { progress, created };
-        } catch (error) {
-            console.error('Error finding or creating student progress:', error);
-            throw error;
+            return await this.findOne({
+                where: {
+                    studentId: studentId,
+                    progressableType: progressableType,
+                    progressableId: progressableId
+                },
+                order: [['points', 'DESC']]
+            });
+        } catch (e) {
+            console.error('Error in findBestResult:', e);
+            throw e;
         }
     }
 
-    /**
-     * Найти прогресс студента по заданию
-     * @param {number} studentId - ID студента
-     * @param {number} taskId - ID задания
-     * @returns {Promise<Object|null>}
-     */
-    async findByStudentAndTask(studentId, taskId) {
-        try {
-            return await this.findOne({ studentId, taskId });
-        } catch (error) {
-            console.error('Error finding student progress by student and task:', error);
-            throw error;
-        }
-    }
 
-    /**
-     * Обновить прогресс студента
-     * @param {number} studentId - ID студента
-     * @param {number} taskId - ID задания
-     * @param {Object} updateData - Данные для обновления
-     * @returns {Promise<Object|null>}
-     */
-    async updateProgress(studentId, taskId, updateData) {
+    async saveStudentResults(progressData, options = {}){
         try {
-            const progress = await this.findByStudentAndTask(studentId, taskId);
-            if (!progress) {
-                return null;
+            if (!progressData.attempt && progressData.studentId && progressData.progressableType && progressData.progressableId) {
+                progressData.attempt = await this.getNextAttempt(
+                    progressData.studentId,
+                    progressData.progressableType,
+                    progressData.progressableId
+                );
             }
-            return await progress.update(updateData);
-        } catch (error) {
-            console.error('Error updating student progress:', error);
-            throw error;
+            return await this.create(progressData, options);
+        } catch (e) {
+            logger.error(e);
+            throw e;
         }
     }
 
-    /**
-     * Получить все завершенные задания студента
-     * @param {number} studentId - ID студента
-     * @returns {Promise<Array>}
-     */
-    async getCompletedTasks(studentId) {
+    async getNextAttempt(studentId, progressableType, progressableId){
         try {
-            return await this.findByCondition({
-                studentId,
-                status: ['completed', 'graded']
-            });
-        } catch (error) {
-            console.error('Error getting completed tasks:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Получить прогресс по курсу/модулю
-     * @param {number} studentId - ID студента
-     * @param {Array} taskIds - Массив ID заданий
-     * @returns {Promise<Object>}
-     */
-    async getCourseProgress(studentId, taskIds) {
-        try {
-            const progresses = await this.findByCondition({
-                studentId,
-                taskId: taskIds
-            });
-
-            const total = taskIds.length;
-            const completed = progresses.filter(p =>
-                p.status === 'completed' || p.status === 'graded'
-            ).length;
-            const inProgress = progresses.filter(p =>
-                p.status === 'in_progress'
-            ).length;
-            const notStarted = total - completed - inProgress;
-
-            return {
-                total,
-                completed,
-                inProgress,
-                notStarted,
-                completionRate: Math.round((completed / total) * 100),
-                progresses
-            };
-        } catch (error) {
-            console.error('Error getting course progress:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Получить статистику по заданиям
-     * @param {number} studentId - ID студента
-     * @returns {Promise<Object>}
-     */
-    async getStudentStats(studentId) {
-        try {
-            const allProgress = await this.findByCondition({ studentId });
-
-            const total = allProgress.length;
-            const completed = allProgress.filter(p =>
-                p.status === 'completed' || p.status === 'graded'
-            ).length;
-            const averageGrade = completed > 0
-                ? allProgress.reduce((sum, p) => sum + (p.grade || 0), 0) / completed
-                : 0;
-
-            return {
-                totalTasks: total,
-                completedTasks: completed,
-                inProgressTasks: allProgress.filter(p => p.status === 'in_progress').length,
-                averageGrade: Math.round(averageGrade),
-                completionRate: Math.round((completed / total) * 100)
-            };
-        } catch (error) {
-            console.error('Error getting student stats:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Обновить ответы студента
-     * @param {number} studentId - ID студента
-     * @param {number} taskId - ID задания
-     * @param {Object} answers - Ответы студента
-     * @returns {Promise<Object|null>}
-     */
-    async updateAnswers(studentId, taskId, answers) {
-        try {
-            return await this.updateProgress(studentId, taskId, { answers });
-        } catch (error) {
-            console.error('Error updating student answers:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Завершить задание
-     * @param {number} studentId - ID студента
-     * @param {number} taskId - ID задания
-     * @param {Object} results - Результаты выполнения
-     * @param options
-     * @returns {Promise<Object|null>}
-     */
-    async completeTask(studentId, taskId, results, options ={}) {
-        try {
-            const { points, answers } = results;
-
-            return await this.updateProgress(studentId, taskId, {
-                answers: answers,
-                points: points,
-            }, options);
-        } catch (error) {
-            console.error('Error completing task:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Получить историю выполнения заданий
-     * @param {number} studentId - ID студента
-     * @param {number} limit - Лимит записей
-     * @returns {Promise<Array>}
-     */
-    async getTaskHistory(studentId, limit = 10) {
-        try {
-            return await this.findByCondition(
-                { studentId },
-                {
-                    order: [['completedAt', 'DESC']],
-                    limit,
-                    include: ['Task'] // предполагая, что есть ассоциация с Task
+            const lastAttempt = await StudentProgress.max('attempt', {
+                where: {
+                    studentId: studentId,
+                    progressableType: progressableType,
+                    progressableId: progressableId
                 }
-            );
+            });
+            return lastAttempt ? lastAttempt + 1 : 1;
         } catch (error) {
-            console.error('Error getting task history:', error);
-            throw error;
+            console.error('Error getting next attempt:', error);
+            return 1;
         }
     }
+
+
 }
 
 module.exports = StudentProgressRepository;

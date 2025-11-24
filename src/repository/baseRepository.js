@@ -81,12 +81,9 @@ class BaseRepository {
      * @param {Object} options - Дополнительные опции
      * @returns {Promise<Object|null>}
      */
-    async findOne(where, options = {}) {
+    async findOne(options = {}) {
         try {
-            return await this.model.findOne({
-                where,
-                ...options
-            });
+            return await this.model.findOne(options);
         } catch (error) {
             logger.error(`Error finding one ${this.model.name}:`);
             throw error;

@@ -8,7 +8,7 @@ const Student = sequelize.define('student', {
         autoIncrement: true,
         primaryKey: true
     },
-    telegram_id: {
+    telegramId: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true

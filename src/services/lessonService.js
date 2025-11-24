@@ -1,14 +1,12 @@
 const LessonRepository = require('../repository/lessonRepository');
 const LessonMaterialRepository = require('../repository/lessonMaterialRepository');
 const LessonTaskRepository = require("../repository/lessonTaskRepository");
-const TaskQuestionRepository = require("../repository/taskQuestionRepository");
 
 class LessonService {
     constructor() {
         this.lessonRepository = new LessonRepository();
         this.lessonMaterialRepository = new LessonMaterialRepository();
         this.lessonTaskRepository = new LessonTaskRepository();
-        this.taskQuestionRepository = new TaskQuestionRepository();
     }
 
     /**
@@ -221,7 +219,7 @@ class LessonService {
         }
     }
 
-    async showLessonTask(lessonId){
+    async getLessonTask(lessonId){
         try {
             return await this.lessonTaskRepository.findByLessonId(lessonId);
         } catch (e) {

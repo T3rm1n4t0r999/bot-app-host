@@ -16,10 +16,26 @@ class StudentRepository extends BaseRepository {
      */
     async findByTelegramId(telegramId) {
         try {
-            return await this.findOne({ telegram_id: telegramId });
+            return await this.findOne({
+                where:{
+                    telegramId: telegramId
+                }
+            });
         } catch (error) {
             logger.error(`Error finding student by Telegram ID:${telegramId}`, error);
             throw error;
+        }
+    }
+
+    async getStudentsByScore(limit = 10){
+        try {
+            return await this.findAll({
+                attributes: ['id', 'username', 'score'],
+                order: [['score', 'DESC']],
+                limit: limit,
+            });
+        } catch (e) {
+            logger.error("Error while getting leaderboard",e);
         }
     }
 

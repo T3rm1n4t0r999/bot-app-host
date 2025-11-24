@@ -28,24 +28,47 @@ const StudentProgress = sequelize.define('StudentProgress', {
             key: 'id'
         }
     },
-    taskId: {
+    progressableId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'lessonTask',
-            key: 'id'
-        }
+        comment: 'ID сущности (LessonTask, Homework, Training, etc.)'
+    },
+    progressableType: {
+        type: DataTypes.ENUM('lesson_task', 'homework', 'training', 'quiz'),
+        allowNull: false,
+        comment: 'Тип сущности'
+    },
+    attempt:{
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: '1'
     }
 }, {
     tableName: 'student_progress',
     timestamps: false,
     underscored: true,
     indexes: [
+        // Уникальный индекс для предотвращения дублирования попыток
         {
-            fields: ['student_id', 'task_id'],
-            unique: true
+            unique: true,
+            fields: ['student_id', 'progressable_type', 'progressable_id', 'attempt'],
+            name: 'student_progress_unique_attempt'
+        },
+        // Индексы для быстрого поиска
+        {
+            fields: ['progressable_type', 'progressable_id']
+        },
+        {
+            fields: ['student_id', 'progressable_type', 'progressable_id']
+        },
+        {
+            fields: ['student_id', 'attempt']
+        },
+        {
+            fields: ['points']
         }
-    ]
+    ],
 });
+
 
 module.exports = StudentProgress;

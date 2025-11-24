@@ -1,10 +1,12 @@
 const StudentRepository = require("../repository/studentRepository");
+const StudentProgressRepository = require("../repository/studentProgressRepository");
 const { sequelize } = require('../database/db');
 const logger = require("../logger/logger");
 
 class StudentService {
     constructor() {
         this.studentRepository = new StudentRepository();
+        this.studentProgressRepo = new StudentProgressRepository();
     }
 
     /**
@@ -20,7 +22,6 @@ class StudentService {
             let student = await this.studentRepository.findByTelegramId(telegramId);
             
             if (!student) {
-                // Создаем нового студента
                 const studentData = {
                     telegram_id: telegramId,
                     firstname: userData.first_name || '',
@@ -38,6 +39,14 @@ class StudentService {
             await transaction.rollback();
             logger.error("Error while registering student",error);
             throw error;
+        }
+    }
+
+    async getLeaderboard(limit = 10){
+        try {
+            return await this.studentRepository.getStudentsByScore(limit);
+        } catch (e) {
+            logger.error("Error while getting leaderboard",e);
         }
     }
 
@@ -64,6 +73,28 @@ class StudentService {
             await transaction.rollback();
             logger.error("Error while adding points to student",error);
             throw error;
+        }
+    }
+
+    async saveStudentResults(progressData)  {
+        const transaction = await sequelize.transaction();
+        try{
+            const newResult = await this.studentProgressRepo.saveStudentResults(progressData, {transaction});
+            await transaction.commit();
+            return newResult;
+        } catch (e) {
+            await transaction.rollback();
+            logger.error(e);
+            throw e;
+        }
+    }
+
+    async findBestResult(studentId, entityType, entityId){
+        try {
+            return await this.studentProgressRepo.findBestResult(studentId, entityType, entityId);
+        } catch (e) {
+            logger.error(e);
+            throw e;
         }
     }
 }

@@ -8,7 +8,7 @@ const courseService = new CourseService();
 
 class CourseController {
     /**
-     * Обработка callback queries для курсов и модулей
+     * Обработка callback queries для курсов
      * @param {import('grammy').Context} ctx - Контекст бота
      */
     static async handleCallbackQuery(ctx) {
@@ -21,7 +21,6 @@ class CourseController {
             } else if (callbackData === 'back_to_courses') {
                 await CourseController.showCourses(ctx, 1);
             } else if (callbackData === 'page_info') {
-                // Просто закрываем всплывающее уведомление, без изменения сообщения
                 await ctx.answerCallbackQuery('Это номер страницы');
             }
         } catch (error) {
