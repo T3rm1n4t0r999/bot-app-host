@@ -36,10 +36,21 @@ class KeyboardFactory {
         return keyboard;
     }
 
-    static createHomeworkTaskKeyboard(homeworkId) {
+    static createHomeworkTaskKeyboard(homeworkId, entityType = 'homework') {
         return new InlineKeyboard()
-            .text('🔙 К уроку', `back_to_homeworks`)
-            .text('Начать выполнение', `start_homework:${homeworkId}`);
+            .text('🔙 К уроку', 'back_to_homework')
+            .text('Начать выполнение', `start_task:${homeworkId}:${entityType}`)
+            .row();
+    }
+
+    /**
+     * Клавиатура для задания
+     */
+    static createLessonTaskKeyboard(taskId, entityType = 'lesson_task'){
+        return new InlineKeyboard()
+            .text('🔙 К уроку', `back_to_task:${taskId}`)
+            .text('Начать выполнение', `start_task:${taskId}:${entityType}`)
+            .row();
     }
 
     /**
@@ -277,16 +288,6 @@ class KeyboardFactory {
     }
 
     /**
-     * Клавиатура для задания
-     */
-    static createLessonTaskKeyboard(lessonId, taskId, entityType){
-        return new InlineKeyboard()
-            .text('🔙 К уроку', `view_lesson:${lessonId}`)
-            .text('Начать выполнение', `start_task:${taskId}:${entityType}`)
-            .row();
-    }
-
-    /**
      * Клавиатура для результатов
      */
     static createResultsKeyboard(entityId, entityType) {
@@ -317,7 +318,7 @@ class KeyboardFactory {
     /**
      * Клавиатура для прогресса
      */
-    static createProgressKeyboard(entityId, currentIndex, entityType) {
+    static createProgressKeyboard(entityId, currentIndex) {
         return new InlineKeyboard()
             .text('↩️ Назад к вопросу', `question_nav:${entityType}:${entityId}:${currentIndex}`)
             .text('📋 К заданию', `question_back_to_task:${entityType}:${entityId}`)

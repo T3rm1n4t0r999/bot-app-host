@@ -36,8 +36,9 @@ class HomeworkRepository extends BaseRepository {
      */
     async getHomeworkByTaskId( taskId) {
         try {
-            return await this.findOne({
+            return await this.findOne({where: {
                 taskId: taskId
+                }
             });
         } catch (e) {
             logger.error("Error finding homework by taskId: ", e);

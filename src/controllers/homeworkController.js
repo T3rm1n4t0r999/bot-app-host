@@ -19,7 +19,7 @@ class HomeworkController {
             if (callbackData.startsWith('homework_page:')) {
                 const page = parseInt(callbackData.split(':')[1]);
                 await HomeworkController.showHomeworks(ctx, page);
-            } else if (callbackData === 'back_to_homeworks') {
+            } else if (callbackData === 'back_to_homework') {
                 await HomeworkController.showHomeworks(ctx, 1);
             }else if (callbackData.startsWith('view_homework:')) {
                 const homeworkId = parseInt(callbackData.split(':')[1]);
@@ -59,7 +59,7 @@ class HomeworkController {
     static async showHomeworkTask(ctx, homeworkId){
         try {
             const homework = await homeworkService.getHomework(homeworkId);
-            if (!homework) {
+            if (!homework || homework.length === 0) {
                 await ctx.answerCallbackQuery('Домашнее задание отсутсвует');
                 return;
             }
@@ -67,7 +67,7 @@ class HomeworkController {
                 `📖 *Название*: ${homework.title}\n`+
                 `🏆 *Максимально баллов*: ${homework.maxScore}\n`;
 
-            const keyboard = KeyboardFactory.createHomeworkTaskKeyboard(homework);
+            const keyboard = KeyboardFactory.createHomeworkTaskKeyboard(homeworkId, 'homework');
             await ctx.editMessageText(message, {
                 reply_markup:keyboard,
                 parse_mode: 'Markdown'

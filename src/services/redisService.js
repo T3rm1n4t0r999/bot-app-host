@@ -48,7 +48,7 @@ class RedisService {
 
     // Прогресс задания
     async saveTaskProgress(userId, entityId, questionIds, currentIndex = 0, entityType = this.ENTITY_TYPES.TASK) {
-        const key = this.getTaskProgressKey(userId, entityId);
+        const key = this.getTaskProgressKey(userId, entityId, entityType);
         const progress = {
             questionIds,
             currentIndex,

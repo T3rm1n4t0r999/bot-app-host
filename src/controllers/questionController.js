@@ -4,8 +4,12 @@ const StudentService = require("../services/studentService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonTaskController = require("./lessonTaskController");
 const HomeworkController = require("./homeworkController");
+const HomeworkService = require("../services/homeworkService");
+
 const questionService = new QuestionService();
 const studentService = new StudentService();
+const homeworkService = new HomeworkService();
+
 class QuestionController {
     static async handleCallbackQuery(ctx) {
         try {
@@ -362,13 +366,15 @@ class QuestionController {
                 });
 
                 let isNewRecord = false;
-                const awardedPoints =  result.earnedPoints - bestResult?.points ?? 0;
+                const awardedPoints =  result.earnedPoints - (bestResult?.points ?? 0);
                 if (awardedPoints > 0) {
                     isNewRecord = true;
                 }
 
                 if (!bestResult) {
                     resultsLines.push(`🎯 Первая попытка!`);
+                    if(entityType === 'lesson_task')
+                        await homeworkService.addHomeworkToStudentByTaskId(studentId, entityId);
                 } else if (isNewRecord) {
                     resultsLines.push(`🎉 Новый рекорд! Прошлый лучший результат: ${bestResult?.points}/${result.maxPoints}`);
                 } else if (bestResult?.points === result.earnedPoints) {

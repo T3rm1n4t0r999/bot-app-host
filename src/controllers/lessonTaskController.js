@@ -15,6 +15,9 @@ class LessonTaskController {
             if (callbackData.startsWith('view_lesson_task:')) {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonTaskController.showLessonTask(ctx, lessonId);
+            } else if(callbackData.startsWith('back_to_task:')) {
+                const taskId = parseInt(callbackData.split(':')[1]);
+                await LessonTaskController.backToTask(ctx, taskId);
             }
         } catch (error) {
             console.error('Ошибка в handleCallbackQuery:', error);
@@ -45,7 +48,7 @@ class LessonTaskController {
         try {
             const tasks = await lessonService.getLessonTask(lessonId);
             if (!tasks || tasks.length === 0) {
-                await ctx.reply('📚 В этом уроке пока нет заданий.');
+                await ctx.answerCallbackQuery('📚 В этом уроке пока нет заданий.');
                 return;
             }
             ctx.lessonId = lessonId;
@@ -61,7 +64,8 @@ class LessonTaskController {
             });
             await ctx.answerCallbackQuery();
         } catch (e) {
-            console.error(e);
+            logger.error(e);
+            throw e;
         }
     }
 }

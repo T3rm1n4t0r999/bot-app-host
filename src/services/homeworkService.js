@@ -21,7 +21,7 @@ class homeworkService{
         }
     }
 
-    async addHomeworkToStudent(studentId, taskId){
+    async addHomeworkToStudentByTaskId(studentId, taskId){
         const transaction = await sequelize.transaction();
         try {
             const existingHomework = await this.homeworkRepository.getHomeworkByTaskId(taskId);

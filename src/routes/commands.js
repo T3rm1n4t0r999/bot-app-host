@@ -72,9 +72,9 @@ router.command('course', requireRegistration(), requireStudentRole(), requireHan
 router.hears('📚 Курсы', requireRegistration(), requireStudentRole(), requireHandledAnswer(), (ctx) => CourseController.showCourses(ctx, 1));
 
 // // Обработка команд показа домашних заданий
-// router.command('homework',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
-// router.hears('📝 Домашние задания', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
-// router.callbackQuery('back_to_homeworks', requireRegistration(), requireStudentRole(), HomeworkController.handleCallbackQuery);
+router.command('homework',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
+router.hears('📝 Домашние задания', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
+router.callbackQuery('back_to_homework', requireRegistration(), requireStudentRole(), HomeworkController.handleCallbackQuery);
 
 // Обработка текстового ответа пользователя для вопросов (если ожидается текст)
 router.on('message:text', requireRegistration(), requireStudentRole(), async (ctx, next) => {

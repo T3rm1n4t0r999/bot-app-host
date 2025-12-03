@@ -158,17 +158,6 @@ function setupAssociations() {
         as: 'student'
     });
 
-    LessonTask.hasMany(StudentProgress, {
-        foreignKey: 'progressableId',
-        as: 'studentProgress',
-        onDelete: 'CASCADE'
-    });
-
-    StudentProgress.belongsTo(LessonTask, {
-        foreignKey: 'progressableId',
-        as: 'task'
-    });
-
     // Homework ↔ LessonTask (Домашнее задание принадлежит заданию урока)
     Homework.belongsTo(LessonTask, {
         foreignKey: 'taskId',

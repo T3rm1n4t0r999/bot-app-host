@@ -20,10 +20,9 @@ class StudentService {
             const telegramId = userData.id.toString();
 
             let student = await this.studentRepository.findByTelegramId(telegramId);
-            
             if (!student) {
                 const studentData = {
-                    telegram_id: telegramId,
+                    telegramId: telegramId,
                     firstname: userData.first_name || '',
                     lastname: userData.last_name || '',
                     username: userData.username || '',
@@ -84,7 +83,7 @@ class StudentService {
             return newResult;
         } catch (e) {
             await transaction.rollback();
-            logger.error(e);
+            //logger.error(e);
             throw e;
         }
     }
@@ -93,7 +92,7 @@ class StudentService {
         try {
             return await this.studentProgressRepo.findBestResult(studentId, entityType, entityId);
         } catch (e) {
-            logger.error(e);
+            //logger.error(e);
             throw e;
         }
     }
