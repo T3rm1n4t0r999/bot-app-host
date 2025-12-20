@@ -34,6 +34,7 @@ router.callbackQuery(/view_material:\d+/, requireRegistration(), requireStudentR
 router.callbackQuery(/back_to_materials:\d+/, requireRegistration(), requireStudentRole(), LessonMaterialController.handleCallbackQuery);
 
 // Обработка callback queries для заданий урока
+router.callbackQuery(/back_to_lesson:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 router.callbackQuery(/back_to_task:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 router.callbackQuery(/view_lesson_task:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 

@@ -38,7 +38,7 @@ class KeyboardFactory {
 
     static createHomeworkTaskKeyboard(homeworkId, entityType = 'homework') {
         return new InlineKeyboard()
-            .text('🔙 К уроку', 'back_to_homework')
+            .text('🔙 К заданию', 'back_to_homework')
             .text('Начать выполнение', `start_task:${homeworkId}:${entityType}`)
             .row();
     }
@@ -46,9 +46,9 @@ class KeyboardFactory {
     /**
      * Клавиатура для задания
      */
-    static createLessonTaskKeyboard(taskId, entityType = 'lesson_task'){
+    static createLessonTaskKeyboard(taskId, lessonId, entityType = 'lesson_task'){
         return new InlineKeyboard()
-            .text('🔙 К уроку', `back_to_task:${taskId}`)
+            .text('🔙 К уроку', `back_to_lesson:${lessonId}`)
             .text('Начать выполнение', `start_task:${taskId}:${entityType}`)
             .row();
     }
@@ -262,7 +262,7 @@ class KeyboardFactory {
             case "text":
                 const buttonText = question.questionType === 'code' ? '💻 Ввести код' : '✍️ Ввести ответ текстом';
                 const buttonIcon = question.userAnswer ? '📝' : '✍️';
-                keyboard.text(`${buttonIcon} ${buttonText}`, `question_await_text:${entityType}:${question.id}:${entityId}`);
+                keyboard.text(`${buttonText}`, `question_await_text:${entityType}:${question.id}:${entityId}`);
                 break;
         }
 

@@ -2,7 +2,8 @@ const RedisService = require("../services/redisService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonService = require("../services/lessonService");
 const TaskService = require("../services/taskService");
-
+const logger = require("../logger/logger");
+const LessonController = require("../controllers/lessonController");
 const lessonService = new LessonService();
 const lessonTaskService = new TaskService();
 const taskService = new TaskService();
@@ -18,6 +19,9 @@ class LessonTaskController {
             } else if(callbackData.startsWith('back_to_task:')) {
                 const taskId = parseInt(callbackData.split(':')[1]);
                 await LessonTaskController.backToTask(ctx, taskId);
+            }else if(callbackData.startsWith('back_to_lesson:')) {
+                const lessonId = parseInt(callbackData.split(':')[1]);
+                await LessonTaskController.backToLesson(ctx, lessonId);
             }
         } catch (error) {
             console.error('Ошибка в handleCallbackQuery:', error);
@@ -35,8 +39,11 @@ class LessonTaskController {
             }
             await LessonTaskController.showLessonTask(ctx, lessonId);
         } catch (e) {
-            logger.error("Error while forwarding back to task",e);
         }
+    }
+
+    static async backToLesson(ctx, lessonId) {
+        await LessonController.showLessonDetails(ctx, lessonId);
     }
 
     /**
@@ -46,6 +53,7 @@ class LessonTaskController {
      */
     static async showLessonTask(ctx, lessonId) {
         try {
+            console.log(lessonId);
             const tasks = await lessonService.getLessonTask(lessonId);
             if (!tasks || tasks.length === 0) {
                 await ctx.answerCallbackQuery('📚 В этом уроке пока нет заданий.');
@@ -53,7 +61,7 @@ class LessonTaskController {
             }
             ctx.lessonId = lessonId;
             const task = tasks[0]
-            const keyboard = KeyboardFactory.createLessonTaskKeyboard(lessonId, task.id, 'lesson_task');
+            const keyboard = KeyboardFactory.createLessonTaskKeyboard(task.id, lessonId, 'lesson_task');
             const message = 'Задание урока:\n\n'+
                                     `📖 *Название*: ${task.title}\n`+
                                     `🏆 *Максимально баллов*: ${task.maxScore}\n`;
