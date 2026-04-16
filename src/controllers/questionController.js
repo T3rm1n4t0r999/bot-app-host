@@ -469,7 +469,7 @@ class QuestionController {
     }
 
     static async finishQuizAndReward(ctx, score, total, taskId) {
-        const passedThreshold = 2; // Больше 8 баллов
+        const passedThreshold = 6; // Больше 8 баллов
         const isExcellent = score > passedThreshold;
 
         // 🔥 ССЫЛКА на картинку (замените на свою)
