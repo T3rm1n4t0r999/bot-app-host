@@ -14,7 +14,7 @@ class RedisService {
 
     async connect() {
         this.client = createClient({
-            url: process.env.REDIS_URL'
+            url: process.env.REDIS_URL
         });
 
         this.client.on('error', (err) => console.log('Redis Client Error', err));
