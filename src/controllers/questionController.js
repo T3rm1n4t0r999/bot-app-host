@@ -406,7 +406,7 @@ class QuestionController {
             }
             await RedisService.clearTaskProgress(userId, entityId, entityType);
 
-            if (entityId === 36) {
+            if (entityId === 6) {
                 await QuestionController.finishQuizAndReward(
                     ctx,
                     result.earnedPoints,  // score
