@@ -1,8 +1,8 @@
 const HomeworkService = require("../services/homeworkService");
-const KeyboardFactory = require("../services/KeyboardFactory");
+const KeyboardFactory = require("../services/keyboardFactory");
 const logger = require("../logger/logger");
 const homeworkService = new HomeworkService();
-const RedisService = require("../services/RedisService");
+const RedisService = require("../services/redisService");
 
 const entityType = RedisService.ENTITY_TYPES.Homework;
 
