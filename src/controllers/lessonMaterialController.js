@@ -5,7 +5,7 @@ const lessonService = new LessonService();
 const { InputFile } = require('grammy');
 const path = require('path');
 const fs = require('fs').promises;
-
+const logger = require('../logger/logger');
 class LessonMaterialController {
 
     // 🔥 Максимально надёжный хелпер: если редактирование не удалось — шлём новое сообщение
