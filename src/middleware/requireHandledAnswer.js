@@ -1,4 +1,4 @@
-const QuestionController = require("../controllers/QuestionController");
+const QuestionController = require("../controllers/questionController");
 
 /**
  * Проверка ожидания ответа на вопрос
