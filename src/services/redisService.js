@@ -14,7 +14,15 @@ class RedisService {
 
     async connect() {
         this.client = createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379'
+            url: process.env.REDIS_URL,
+            
+            username: 'default',             
+            password: process.env.REDIS_PASSWORD,
+            
+            socket: {
+                tls: process.env.REDIS_URL?.startsWith('rediss://'),
+                rejectUnauthorized: false
+            }
         });
 
         this.client.on('error', (err) => console.log('Redis Client Error', err));
