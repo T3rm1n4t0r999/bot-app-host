@@ -1,5 +1,5 @@
 const RedisService = require("../services/redisService");
-const QuestionService = require("../services/QuestionService");
+const QuestionService = require("../services/questionService");
 const StudentService = require("../services/studentService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonTaskController = require("./lessonTaskController");
