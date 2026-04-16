@@ -133,7 +133,7 @@ class LessonMaterialController {
                 const filePath = imageFile.path;
                 const storagePath = process.env.LARAVEL_STORAGE_PATH
                     || path.join(__dirname, '..', '..');
-                console.log(storagePath)
+                logger.info(storagePath);
 
                 const fullPath = path.join(storagePath, filePath);
 
