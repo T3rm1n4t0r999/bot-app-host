@@ -1,6 +1,6 @@
 const BaseRepository = require(`./baseRepository`);
 const Question = require("../models/question");
-const Logger = require("../logger/Logger");
+const Logger = require("../logger/logger");
 class QuestionRepository extends BaseRepository {
     constructor() {
         super(Question);
