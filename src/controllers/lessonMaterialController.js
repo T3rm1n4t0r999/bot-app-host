@@ -128,7 +128,7 @@ class LessonMaterialController {
 
             const files = material.files || [];
             const imageFile = files.find(f => f.mime_type?.toLowerCase()?.startsWith('image/'));
-
+            console.log(files)
             if (imageFile) {
                 const filePath = imageFile.path;
                 const storagePath = path.join(__dirname, '..', '..');
