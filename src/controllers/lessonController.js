@@ -1,6 +1,6 @@
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonService = require("../services/lessonService");
-const ModuleController = require("../controllers/ModuleController");
+const ModuleController = require("../controllers/moduleController");
 const logger = require("../logger/logger");
 const {InlineKeyboard} = require("grammy");
 
