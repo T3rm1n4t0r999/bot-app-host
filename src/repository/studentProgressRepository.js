@@ -7,6 +7,13 @@ class StudentProgressRepository extends BaseRepository {
         super(StudentProgress);
     }
 
+    /**
+     * Найти лучший результат
+     * @param studentId
+     * @param progressableType
+     * @param progressableId
+     * @returns {Promise<Object|null>}
+     */
     async findBestResult(studentId, progressableType, progressableId) {
         try {
             return await this.findOne({
@@ -23,7 +30,12 @@ class StudentProgressRepository extends BaseRepository {
         }
     }
 
-
+    /**
+     * Сохранить результат студента
+     * @param progressData
+     * @param options
+     * @returns {Promise<Object>}
+     */
     async saveStudentResults(progressData, options = {}){
         try {
             if (!progressData.attempt && progressData.studentId && progressData.progressableType && progressData.progressableId) {
@@ -40,6 +52,13 @@ class StudentProgressRepository extends BaseRepository {
         }
     }
 
+    /**
+     * Получить следующую попытку
+     * @param studentId
+     * @param progressableType
+     * @param progressableId
+     * @returns {Promise<number|*|number>}
+     */
     async getNextAttempt(studentId, progressableType, progressableId){
         try {
             const lastAttempt = await StudentProgress.max('attempt', {

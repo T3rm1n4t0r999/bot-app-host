@@ -1,7 +1,11 @@
 const { ForbiddenError, AppError, UnauthorizedError} = require("../utils/errors");
 const errorHandler = require("../utils/errorHandler");
 const logger = require("../logger/logger");
-
+/**
+ * Проверка роли студента
+ * @param allowedRoles
+ * @returns {(function(*, *): Promise<void>)|*}
+ */
 module.exports = function(allowedRoles = ['student', 'premium', 'guest']) {
     return async (ctx, next) => {
         try {

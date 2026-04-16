@@ -126,7 +126,11 @@ class RedisService {
     // Ожидание текстового ответа (маркер состояния)
     async setAwaitingTextAnswer(userId, entityId, questionId, entityType = this.ENTITY_TYPES.TASK) {
         const key = this.getAwaitingTextKey(userId, entityType);
-        await this.setWithTTL(key, JSON.stringify({ entityId: entityId, questionId }));
+        await this.setWithTTL(key, JSON.stringify({
+            entityId: entityId,
+            questionId,
+            entityType
+        }));
     }
 
     async getAwaitingTextAnswer(userId, entityType = this.ENTITY_TYPES.TASK) {
@@ -136,7 +140,7 @@ class RedisService {
     }
 
     async clearAwaitingTextAnswer(userId, entityType = this.ENTITY_TYPES.TASK) {
-        const key = this.getAwaitingTextKey(userId,entityType);
+        const key = this.getAwaitingTextKey(userId, entityType);
         await this.client.del(key);
     }
 

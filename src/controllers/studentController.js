@@ -35,6 +35,11 @@ class studentController {
         }
     }
 
+    /**
+     * Показать таблицу лидеров
+     * @param ctx
+     * @returns {Promise<void>}
+     */
     static async showLeaderboard(ctx) {
         const student = ctx.state.student;
         const limit = 10;
@@ -49,7 +54,11 @@ class studentController {
         await ctx.answerCallbackQuery();
     }
 
-
+    /**
+     * Обработка команды /start
+     * @param ctx
+     * @returns {Promise<void>}
+     */
     static async handleStart(ctx) {
         try {
             const student = await studentService.registerStudent(ctx.from);

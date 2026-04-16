@@ -41,4 +41,5 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
     underscored: true,
 });
 
+
 module.exports = LessonMaterial;

@@ -1,15 +1,16 @@
-const RedisService = require("../services/redisService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonService = require("../services/lessonService");
-const TaskService = require("../services/taskService");
 const logger = require("../logger/logger");
 const LessonController = require("../controllers/lessonController");
 const lessonService = new LessonService();
-const lessonTaskService = new TaskService();
-const taskService = new TaskService();
-const entityType = RedisService.ENTITY_TYPES.TASK
+
 
 class LessonTaskController {
+    /**
+     * Обработка команд
+     * @param ctx
+     * @returns {Promise<void>}
+     */
     static async handleCallbackQuery(ctx) {
         try {
             const callbackData = ctx.callbackQuery.data;
@@ -29,6 +30,13 @@ class LessonTaskController {
         }
     }
 
+    /**
+     * Вернуться к заданию
+     * @param ctx
+     * @param taskId
+     * @returns {Promise<void>}
+     */
+
     static async backToTask(ctx, taskId) {
         try {
             const lessonTask = await lessonService.getLessonByLessonTaskId(taskId);
@@ -42,6 +50,12 @@ class LessonTaskController {
         }
     }
 
+    /**
+     * Вернуться к уроку
+     * @param ctx
+     * @param lessonId
+     * @returns {Promise<void>}
+     */
     static async backToLesson(ctx, lessonId) {
         await LessonController.showLessonDetails(ctx, lessonId);
     }
@@ -53,7 +67,6 @@ class LessonTaskController {
      */
     static async showLessonTask(ctx, lessonId) {
         try {
-            console.log(lessonId);
             const tasks = await lessonService.getLessonTask(lessonId);
             if (!tasks || tasks.length === 0) {
                 await ctx.answerCallbackQuery('📚 В этом уроке пока нет заданий.');
@@ -63,17 +76,61 @@ class LessonTaskController {
             const task = tasks[0]
             const keyboard = KeyboardFactory.createLessonTaskKeyboard(task.id, lessonId, 'lesson_task');
             const message = 'Задание урока:\n\n'+
-                                    `📖 *Название*: ${task.title}\n`+
+                                    `*Название*: ${task.title}\n\n`+
+                                    `📖 *Описание*: ${task.description}\n\n`+
                                     `🏆 *Максимально баллов*: ${task.maxScore}\n`;
 
-            await ctx.editMessageText(message, {
-                reply_markup: keyboard,
-                parse_mode: 'Markdown'
-            });
+            await LessonTaskController.safeSendText(ctx, message, keyboard, 'Markdown');
             await ctx.answerCallbackQuery();
         } catch (e) {
             logger.error(e);
             throw e;
+        }
+    }
+
+    static async sendWithDelete(ctx, text, keyboard, parseMode = 'Markdown') {
+        // Пытаемся удалить текущее сообщение (игнорируем ошибки)
+        await ctx.deleteMessage().catch(err => {
+            // Ожидаемые ошибки: сообщение слишком старое (>48ч), нет прав, уже удалено
+            if (err?.error_code !== 400) {
+                console.log('⚠️ Could not delete message:', err?.description || err?.message);
+            }
+        });
+
+        // Отправляем новое сообщение
+        await ctx.reply(text, {
+            reply_markup: keyboard,
+            parse_mode: parseMode
+        });
+    }
+
+    static async safeSendText(ctx, text, keyboard, parseMode = 'Markdown') {
+        try {
+            await ctx.editMessageText(text, {
+                reply_markup: keyboard,
+                parse_mode: parseMode
+            });
+        } catch (err) {
+            const errMsg = err?.message || err?.description || JSON.stringify(err);
+            const isMediaError = errMsg.includes('no text in the message') ||
+                errMsg.includes('message can\'t be edited') ||
+                errMsg.includes('400');
+
+            if (isMediaError) {
+                // Не можем редактировать текст в медиа → удаляем и шлём новое
+                try {
+                    await ctx.deleteMessage();
+                } catch (delErr) {
+                    console.log('⚠️ Could not delete message:', delErr?.message);
+                }
+                await ctx.reply(text, {
+                    reply_markup: keyboard,
+                    parse_mode: parseMode
+                });
+            } else {
+                console.error('❌ Unexpected edit error:', errMsg);
+                throw err;
+            }
         }
     }
 }

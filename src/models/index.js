@@ -60,18 +60,17 @@ function setupAssociations() {
         as: 'lesson'
     });
 
-    // LessonMaterial имеет много файлов
     LessonMaterial.hasMany(File, {
-        foreignKey: 'fileableId',
+        foreignKey: 'fileable_id',
         constraints: false,
         scope: {
-            fileable_type: 'LessonMaterial'
+            fileable_type: 'lesson_material'
         },
         as: 'files'
     });
 
     File.belongsTo(LessonMaterial, {
-        foreignKey: 'fileableId',
+        foreignKey: 'fileable_id',
         constraints: false,
         as: 'lessonMaterial'
     });

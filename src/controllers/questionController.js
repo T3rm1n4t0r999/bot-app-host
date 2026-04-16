@@ -5,6 +5,7 @@ const KeyboardFactory = require("../services/keyboardFactory");
 const LessonTaskController = require("./lessonTaskController");
 const HomeworkController = require("./homeworkController");
 const HomeworkService = require("../services/homeworkService");
+const {InlineKeyboard} = require("grammy");
 
 const questionService = new QuestionService();
 const studentService = new StudentService();
@@ -239,7 +240,7 @@ class QuestionController {
             const awaiting = await RedisService.getAwaitingTextAnswer(userId);
             if (!awaiting) return false;
 
-            const { taskId: entityId, questionId, entityType } = awaiting;
+            const {entityId, questionId, entityType } = awaiting;
             const text = ctx.message.text?.trim();
 
             if (!text) {
@@ -248,7 +249,7 @@ class QuestionController {
             }
 
             await RedisService.setUserTextAnswer(userId, questionId, text, entityType);
-            await RedisService.clearAwaitingTextAnswer(userId);
+            await RedisService.clearAwaitingTextAnswer(userId, entityType);
 
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
             const index = progress?.questionIds.findIndex(id => id === questionId.toString()) ?? 0;
@@ -347,7 +348,16 @@ class QuestionController {
                 await ctx.answerCallbackQuery('❌ Не все вопросы решены!');
                 return;
             }
+            if (entityId === 36) {
+                // 🔥 1. СРАЗУ удаляем сообщение с последним вопросом (до долгих операций!)
+                await ctx.deleteMessage().catch(err => {
+                    console.log('⚠️ Не удалось удалить вопрос:', err?.description || err?.message);
+                });
 
+                // 🔥 2. Сразу отвечаем на callback (Telegram требует ответ за 3 сек)
+                await ctx.answerCallbackQuery('⏳ Проверяю ответы...').catch(() => {
+                });
+            }
             // Вычисляем результаты
             const result = await questionService.calculateResults(questionIds, answers);
             const resultsLines = [];
@@ -396,19 +406,106 @@ class QuestionController {
             }
             await RedisService.clearTaskProgress(userId, entityId, entityType);
 
-            const message = resultsLines.join('\n');
-            const keyboard = KeyboardFactory.createResultsKeyboard(entityId, entityType);
+            if (entityId === 36) {
+                await QuestionController.finishQuizAndReward(
+                    ctx,
+                    result.earnedPoints,  // score
+                    result.maxPoints,     // total
+                    entityId              // taskId
+                );
+            }else{
+                const message = resultsLines.join('\n');
+                const keyboard = KeyboardFactory.createResultsKeyboard(entityId, entityType);
 
-            await ctx.editMessageText(message, {
-                reply_markup: keyboard,
-                parse_mode: 'Markdown'
-            });
-            await ctx.answerCallbackQuery();
+                await ctx.editMessageText(message, {
+                    reply_markup: keyboard,
+                    parse_mode: 'Markdown'
+                });
+                await ctx.answerCallbackQuery();
+            }
+
         } catch (error) {
             console.error('Ошибка finishTask:', error);
             await ctx.answerCallbackQuery('❌ Не удалось завершить задание');
         }
     }
+
+    static async safeSendText(ctx, text, keyboard, parseMode = 'Markdown') {
+        try {
+            await ctx.editMessageText(text, {
+                reply_markup: keyboard,
+                parse_mode: parseMode
+            });
+        } catch (err) {
+            const errMsg = err?.message || err?.description || JSON.stringify(err);
+            const isMediaError = errMsg.includes('no text in the message') ||
+                errMsg.includes('message can\'t be edited') ||
+                errMsg.includes('400');
+
+            if (isExcellent) {
+                // 🔥 1. Удаляем предыдущее сообщение (с результатами)
+                await ctx.deleteMessage().catch(err => {
+                    // Игнорируем ошибки, если сообщение уже удалено или старше 48ч
+                    console.log('⚠️ Не удалось удалить старое сообщение:', err?.description || err?.message);
+                });
+
+                // 🔥 2. Отправляем НОВОЕ сообщение с фото-медалью
+                await ctx.replyWithPhoto(
+                    medalUrl,
+                    {
+                        caption: safeMessage,
+                        parse_mode: 'Markdown',
+                        reply_markup: keyboard
+                    }
+                );
+            } else {
+                // Если баллов мало → просто отправляем текстовое сообщение
+                await ctx.reply(safeMessage, {
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                });
+            }
+        }
+    }
+
+    static async finishQuizAndReward(ctx, score, total, taskId) {
+        const passedThreshold = 2; // Больше 8 баллов
+        const isExcellent = score > passedThreshold;
+
+        // 🔥 ССЫЛКА на картинку (замените на свою)
+        const medalUrl = 'https://fs.znanio.ru/8c0997/52/ed/d850d9d7fbaf56d391ba37e20641936a8a.jpg';
+
+        // Формируем текст (Markdown)
+        const rawMessage = isExcellent
+            ? `🎉 Поздравляем!\n\nТы набрал ${score} баллов из ${total}!\nОтличная работа — вот твоя заслуженная медаль 🏅`
+            : `📊 Твой результат: ${score}\* из ${total}\n\nПопробуй ещё раз! Для получения медали нужно набрать больше \*${passedThreshold}\* баллов.`;
+
+        // Экранируем для Markdown
+        const safeMessage = rawMessage.replace(/([_*`[\]])/g, '\\$1');
+
+        // Клавиатура
+        const keyboard = new InlineKeyboard()
+            .text('📚 К уроку', `view_lesson_task:${taskId}`)
+
+        if (isExcellent) {
+            // 🔥 Отправляем фото ПО ССЫЛКЕ — просто строка!
+            await ctx.replyWithPhoto(
+                medalUrl,  // ✅ Просто URL, без InputFile
+                {
+                    caption: safeMessage,
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                }
+            );
+        } else {
+            // Только текст, если баллов недостаточно
+            await ctx.reply(safeMessage, {
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+            });
+        }
+    }
+
 }
 
 module.exports = QuestionController;

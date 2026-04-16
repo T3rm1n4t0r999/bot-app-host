@@ -6,6 +6,12 @@ class QuestionRepository extends BaseRepository {
         super(Question);
     }
 
+    /**
+     * Найти все вопросы
+     * @param entityId
+     * @param entityType
+     * @returns {Promise<Array>}
+     */
     async findAllQuestions(entityId, entityType) {
         try {
             return await this.findAll({
@@ -21,6 +27,11 @@ class QuestionRepository extends BaseRepository {
         }
     }
 
+    /**
+     * Найти все вопросы по номеру
+     * @param questionIds
+     * @returns {Promise<Array>}
+     */
     async findByIds(questionIds) {
         try {
             return await this.findAll({

@@ -26,14 +26,7 @@ class CourseService {
      */
     async getAccessibleCourses(userData) {
         try {
-            // if (userData.role === 'premium') {
-            //     return await this.getAllCourses();
-            // }
-            //
-            // if (userData.role === 'student') {
-            //     return await this.courseRepository.getAccessibleCourses(userData);
-            // }
-            //return [];
+            //Все имеют доступ
             return await this.getAllCourses();
         } catch (error) {
             console.error('Error getting accessible courses:', error);

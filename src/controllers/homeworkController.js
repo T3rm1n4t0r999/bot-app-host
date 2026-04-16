@@ -33,6 +33,9 @@ class HomeworkController {
         }
     }
 
+    /**
+     * Показать все доступные домашние задания
+     */
     static async showHomeworks(ctx, page = 1) {
         try {
             const studentId = ctx.state?.student?.id;
@@ -56,6 +59,9 @@ class HomeworkController {
         }
     }
 
+    /**
+     * Показать задание домашней работы
+     */
     static async showHomeworkTask(ctx, homeworkId){
         try {
             const homework = await homeworkService.getHomework(homeworkId);
@@ -79,8 +85,11 @@ class HomeworkController {
         }
     }
 
+    /**
+     * Вернуться к домашним работам
+     */
     static async backToHomework(ctx, homeworkId) {
-        await HomeworkController.showHomework(ctx, homeworkId);
+        await HomeworkController.showHomeworks(ctx, homeworkId);
     }
 }
 

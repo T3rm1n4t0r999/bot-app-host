@@ -1,9 +1,6 @@
 const CourseService = require("../services/courseService");
-const ModuleService = require("../services/moduleService");
 const KeyboardFactory = require("../services/keyboardFactory");
-const StudentController = require("./studentController");
 
-// Создаем экземпляры сервисов
 const courseService = new CourseService();
 
 class CourseController {
@@ -59,8 +56,6 @@ class CourseController {
             await ctx.answerCallbackQuery('❌ Произошла ошибка при загрузке курсов.');
         }
     }
-
-
 }
 
 module.exports = CourseController;

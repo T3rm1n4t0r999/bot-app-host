@@ -5,6 +5,10 @@ const logger = require("../logger/logger");
 // Создаем экземпляр сервиса
 const studentService = new StudentService();
 
+/**
+ * Проверка регистрации пользователя
+ * @returns {(function(*, *): Promise<void>)|*}
+ */
 function requireRegistration() {
     return async (ctx, next) => {
         const telegramId = ctx.from?.id?.toString();

@@ -9,8 +9,9 @@ class KeyboardFactory {
     static createMainMenuKeyboard() {
         return new Keyboard()
             .text('👤 Мой профиль').row()
-            .text('📝 Домашние задания')
+            // .text('📝 Домашние задания')
             .text('📚 Курсы').row()
+            // .text('Тренажёры')
             .resized();
     }
 
@@ -41,6 +42,11 @@ class KeyboardFactory {
             .text('🔙 К заданию', 'back_to_homework')
             .text('Начать выполнение', `start_task:${homeworkId}:${entityType}`)
             .row();
+    }
+
+    static createTrainerMenuKeyboard(trainerId, entityType = 'trainer') {
+        return new InlineKeyboard()
+            .text()
     }
 
     /**
@@ -86,6 +92,42 @@ class KeyboardFactory {
 
             if (currentPage < totalPages) {
                 navRow.push(InlineKeyboard.text('➡️', `homework_page:${currentPage + 1}`));
+            }
+
+            keyboard.row(...navRow);
+        } else if (homeworks.length > 0) {
+            keyboard.text('🔙 К профилю', `show_student_profile`);
+        }
+
+        return keyboard;
+    }
+
+    static createTrainersKeyboard(trainers = [], currentPage = 1, itemsPerPage = 4) {
+        const keyboard = new InlineKeyboard();
+        const totalPages = Math.ceil(trainers.length / itemsPerPage);
+
+        currentPage = Math.max(1, Math.min(currentPage, totalPages));
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const currentTrainers = trainerss.slice(startIndex, endIndex);
+
+        currentTrainers.forEach(trainer => {
+            keyboard.text(homework.title, `view_trainer:${trainer.id}:1`).row();
+        })
+        // Добавляем кнопки навигации
+        if (totalPages > 1) {
+            const navRow = [];
+
+            if (currentPage > 1) {
+                navRow.push(InlineKeyboard.text('⬅️', `trainer_page:${currentPage - 1}`));
+            } else {
+                navRow.push(InlineKeyboard.text('🔙 К профилю', 'show_student_profile'));
+            }
+
+            navRow.push(InlineKeyboard.text(`${currentPage}/${totalPages}`, 'page_info_trainer'));
+
+            if (currentPage < totalPages) {
+                navRow.push(InlineKeyboard.text('➡️', `trainer_page:${currentPage + 1}`));
             }
 
             keyboard.row(...navRow);

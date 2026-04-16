@@ -8,10 +8,20 @@ class homeworkService{
         this.homeworkRepository = new HomeworkRepository();
     }
 
+    /**
+     * Получить домашнюю работу
+     * @param homeworkId
+     * @returns {Promise<Object|null>}
+     */
     async getHomework(homeworkId) {
         return await this.homeworkRepository.findById(homeworkId);
     }
 
+    /**
+     * Получить все домашние задания студента
+     * @param studentId
+     * @returns {Promise<Array<Homework>>}
+     */
     async getStudentHomeworks(studentId){
         try {
             return await this.homeworkRepository.getStudentHomeworks(studentId);
@@ -21,6 +31,12 @@ class homeworkService{
         }
     }
 
+    /**
+     * Добавить домашнее задание студенту по номеру практического задания
+     * @param studentId
+     * @param taskId
+     * @returns {Promise<[Model<*, TModelAttributes>,boolean]>}
+     */
     async addHomeworkToStudentByTaskId(studentId, taskId){
         const transaction = await sequelize.transaction();
         try {
@@ -37,14 +53,6 @@ class homeworkService{
             await transaction.rollback();
             logger.error("Error adding homework to student", e);
             throw e;
-        }
-    }
-    
-    async getHomeworkQuestionById(questionId){
-        try {
-            return await this.homeworkQuestionRepository.findById(questionId);
-        } catch (e) {
-            logger.error("Error getting homework question by id", e);
         }
     }
 }

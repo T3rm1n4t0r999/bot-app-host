@@ -1,9 +1,9 @@
 const BaseRepository = require('./baseRepository');
-const Course = require('../models/course');
+const Trainer = require('../models/trainer');
 
-class CourseRepository extends BaseRepository {
+class TrainerRepository extends BaseRepository {
     constructor() {
-        super(Course);
+        super(Trainer);
     }
 
     /**
@@ -21,4 +21,4 @@ class CourseRepository extends BaseRepository {
     }
 }
 
-module.exports = CourseRepository;
+module.exports = TrainerRepository;

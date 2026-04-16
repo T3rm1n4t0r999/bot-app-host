@@ -27,6 +27,11 @@ class StudentRepository extends BaseRepository {
         }
     }
 
+    /**
+     * Получить студентов с сортировкой по баллам
+     * @param limit
+     * @returns {Promise<Array>}
+     */
     async getStudentsByScore(limit = 10){
         try {
             return await this.findAll({
@@ -40,44 +45,12 @@ class StudentRepository extends BaseRepository {
     }
 
     /**
-     * Получить доступные курсы студента
-     * @param {number} studentId - ID студента
+     * Добавить баллы студенту
+     * @param studentId
+     * @param points
+     * @param options
      * @returns {Promise<Array>}
      */
-    async getAccessibleCourses(studentId) {
-        try {
-            const studentCourses = await StudentCourse.findAll({
-                where: { studentId },
-                include: [{
-                    model: Course,
-                    as: 'course',
-                    required: true
-                }]
-            });
-            return studentCourses.map(studentCourse => studentCourse.course);
-        } catch (error) {
-            logger.error(`Error getting accessible courses for studentId:${studentId}`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Проверить доступ студента к курсу
-     * @param {number} studentId - ID студента
-     * @param {number} courseId - ID курса
-     * @returns {Promise<boolean>}
-     */
-    async hasAccessToCourse(studentId, courseId) {
-        try {
-            return await StudentCourse.exists({
-                where: { studentId, courseId }
-            });
-        } catch (error) {
-            logger.error(`Error checking course access for studentId: ${studentId}, course: ${courseId}`, error);
-            throw error;
-        }
-    }
-
     async addPoints(studentId, points, options = {}) {
         try {
             return await this.increment('score', {

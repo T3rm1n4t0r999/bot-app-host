@@ -6,6 +6,12 @@ class QuestionService {
         this.questionRepo = new QuestionRepository();
     }
 
+    /**
+     * Получить вопрос по сущности
+     * @param entityId
+     * @param entityType
+     * @returns {Promise<Array>}
+     */
     async getQuestionsByEntity(entityId, entityType) {
         try {
             return await this.questionRepo.findAllQuestions(entityId, entityType);
@@ -15,6 +21,11 @@ class QuestionService {
         }
     }
 
+    /**
+     * Получить вопрос по номеру
+     * @param questionId
+     * @returns {Promise<Object|null>}
+     */
     async getQuestionById(questionId) {
         try {
             return await this.questionRepo.findById(questionId);
@@ -24,6 +35,12 @@ class QuestionService {
         }
     }
 
+    /**
+     * Вычислить результат прохождения теста
+     * @param questionIds
+     * @param userAnswers
+     * @returns {Promise<{earnedPoints: number, maxPoints: number}>}
+     */
     async calculateResults(questionIds, userAnswers) {
         try {
             const questions = await this.getQuestionsByIds(questionIds);
@@ -47,6 +64,11 @@ class QuestionService {
         }
     }
 
+    /**
+     * Получить вопросы по номерам
+     * @param questionIds
+     * @returns {Promise<Array>}
+     */
     async getQuestionsByIds(questionIds) {
         try {
             return await this.questionRepo.findByIds(questionIds);
@@ -56,6 +78,12 @@ class QuestionService {
         }
     }
 
+    /**
+     * Проверка корректности ответа на вопрос
+     * @param question
+     * @param userAnswer
+     * @returns {Promise<this is string[]|*|boolean>}
+     */
     async isAnswerCorrect(question, userAnswer) {
         if (!question || userAnswer === null || userAnswer === undefined) {
             return false;

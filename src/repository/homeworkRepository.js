@@ -46,6 +46,13 @@ class HomeworkRepository extends BaseRepository {
         }
     }
 
+    /**
+     * Добавить домашнее задание студенту
+     * @param studentId
+     * @param homeworkId
+     * @param options
+     * @returns {Promise<[Model<any, TModelAttributes>, boolean]>}
+     */
     async addHomeworkToStudent(studentId, homeworkId, options = {}) {
         try {
             return await StudentHomework.findOrCreate({

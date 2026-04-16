@@ -41,6 +41,11 @@ class StudentService {
         }
     }
 
+    /**
+     * Получить таблицу лидеров
+     * @param limit
+     * @returns {Promise<Array>}
+     */
     async getLeaderboard(limit = 10){
         try {
             return await this.studentRepository.getStudentsByScore(limit);
@@ -63,6 +68,12 @@ class StudentService {
         }
     }
 
+    /**
+     * Добавить баллы студенту
+     * @param studentId
+     * @param points
+     * @returns {Promise<void>}
+     */
     async addPoints(studentId, points) {
         const transaction = await sequelize.transaction();
         try {
@@ -75,6 +86,11 @@ class StudentService {
         }
     }
 
+    /**
+     * Сохранить прогресс студента
+     * @param progressData
+     * @returns {Promise<Object>}
+     */
     async saveStudentResults(progressData)  {
         const transaction = await sequelize.transaction();
         try{
@@ -83,16 +99,23 @@ class StudentService {
             return newResult;
         } catch (e) {
             await transaction.rollback();
-            //logger.error(e);
+            logger.error(e);
             throw e;
         }
     }
 
+    /**
+     * Найти лучший результат студента
+     * @param studentId
+     * @param entityType
+     * @param entityId
+     * @returns {Promise<Object|null>}
+     */
     async findBestResult(studentId, entityType, entityId){
         try {
             return await this.studentProgressRepo.findBestResult(studentId, entityType, entityId);
         } catch (e) {
-            //logger.error(e);
+            logger.error(e);
             throw e;
         }
     }
