@@ -34,6 +34,10 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
             model: 'lessons',
             key: 'id'
         }
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'lesson_materials',

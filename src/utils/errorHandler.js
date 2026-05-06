@@ -6,7 +6,7 @@ const errorHandler = (ctx, error) => {
     const errorMessages = {
         [UnauthorizedError.name]: '❌ У вас нет доступа к этому разделу',
         [ValidationError.name]: '❌ Неверные данные. Проверьте ввод.',
-        [NotFoundError.name]: '❌ Пользователь не найден. Используйте /start для регистрации.',
+        [NotFoundError.name]: '❌ Пользователь не найден. Используйте /start:token для регистрации.',
         [AppError.name]: '❌ Произошла ошибка. Попробуйте позже.',
         default: '❌ Неизвестная ошибка. Обратитесь в поддержку.'
     };

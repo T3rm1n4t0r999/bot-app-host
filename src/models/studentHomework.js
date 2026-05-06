@@ -23,7 +23,7 @@ const StudentHomework = sequelize.define('StudentHomework', {
             model: 'students',
             key: 'id'
         }
-    }
+    },
 }, {
     tableName: 'student_homework',
     timestamps: true,

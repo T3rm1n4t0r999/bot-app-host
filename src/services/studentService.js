@@ -26,6 +26,7 @@ class StudentService {
                     firstname: userData.first_name || '',
                     lastname: userData.last_name || '',
                     username: userData.username || '',
+                    organization_id: userData?.organizationId || 1,
                     role: 'student'
                 };
                 

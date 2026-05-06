@@ -26,6 +26,10 @@ const Module = sequelize.define('Module', {
             model: 'courses',
             key: 'id'
         }
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'modules',

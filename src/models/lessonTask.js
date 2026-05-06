@@ -30,6 +30,10 @@ const LessonTask = sequelize.define('LessonTask', {
             model: 'lessons',
             key: 'id'
         }
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'lesson_task',

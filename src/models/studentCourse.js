@@ -32,6 +32,10 @@ const StudentCourse = sequelize.define('StudentCourse', {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: new Date()
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'student_courses',

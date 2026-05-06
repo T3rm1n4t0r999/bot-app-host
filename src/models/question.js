@@ -55,6 +55,10 @@ const question = sequelize.define('Question', {
         type: DataTypes.TEXT,
         allowNull: true,
         comment: 'Explanation for the answer'
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'questions',

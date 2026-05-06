@@ -27,6 +27,10 @@ const Homework = sequelize.define('Homework', {
             model: 'lessonTask',
             key: 'id'
         }
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     tableName: 'homeworks',

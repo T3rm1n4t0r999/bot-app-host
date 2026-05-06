@@ -41,6 +41,10 @@ const Student = sequelize.define('student', {
         allowNull: false,
         defaultValue: 'Новичок'
     },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    }
 }, {
     timestamps: true,
     underscored: true,

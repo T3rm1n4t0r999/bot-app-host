@@ -17,6 +17,10 @@ const Course = sequelize.define('Course', {
     description: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    organization_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
     underscored: true,

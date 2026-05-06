@@ -42,7 +42,7 @@ const StudentProgress = sequelize.define('StudentProgress', {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: '1'
-    }
+    },
 }, {
     tableName: 'student_progress',
     timestamps: false,
