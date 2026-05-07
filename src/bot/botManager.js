@@ -1,5 +1,5 @@
 
-const createBotInstance = require('./bot');
+const createBotInstance = require('./bot_webhook');
 const axios = require('axios');
 const logger = require('../logger/logger');
 

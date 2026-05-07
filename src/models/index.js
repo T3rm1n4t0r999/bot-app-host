@@ -1,4 +1,4 @@
-// models/index.js
+// models/index_webhook.js
 const sequelize = require('../database/db');
 const Course = require('./course');
 const Module = require('./module');
@@ -11,7 +11,10 @@ const File = require('./file');
 const StudentCourse = require('./studentCourse');
 const Student = require('./student');
 const StudentHomework = require('./studentHomework');
+const Invitation = require('./invitation');
 const logger = require('../logger/logger');
+const Organization = require("./organization");
+const Bot = require("./bot");
 // Настройка ассоциаций
 function setupAssociations() {
     Course.hasMany(Module, {
@@ -23,6 +26,21 @@ function setupAssociations() {
     Module.belongsTo(Course, {
         foreignKey: 'courseId',
         as: 'course'
+    });
+
+    Organization.hasOne(Bot, {
+        foreignKey: 'organization_id',
+        as: 'bot'
+    });
+
+    Organization.hasMany(Invitation, {
+        foreignKey: 'organization_id',
+        as: 'invitations'
+    });
+
+    Bot.belongsTo(Organization, {
+        foreignKey: 'organization_id',
+        as: 'organization'
     });
 
     Module.hasMany(Lesson, {

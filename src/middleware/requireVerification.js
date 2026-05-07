@@ -1,0 +1,40 @@
+// const {NotFoundError, UnauthorizedError, ValidationError} = require("../utils/errors");
+// const StudentService = require("../services/studentService");
+// const errorHandler = require("../utils/errorHandler");
+// const logger = require("../logger/logger");
+// // Создаем экземпляр сервиса
+// const studentService = new StudentService();
+//
+// /**
+//  * Проверка регистрации пользователя
+//  * @returns {(function(*, *): Promise<void>)|*}
+//  */
+// function requireVerification() {
+//     return async (ctx, next) => {
+//         const telegramId = ctx.from?.id?.toString();
+//
+//         if (!telegramId) {
+//             throw new ValidationError('Telegram ID not provided');
+//         }
+//
+//         try {
+//             const student = await studentService.getStudentProfile(telegramId);
+//
+//             if (!student) {
+//                 throw new NotFoundError('Telegram ID not found');
+//             }
+//
+//             // Инициализация state если не существует
+//             ctx.state = ctx.state || {};
+//             ctx.state.student = student;
+//
+//             await next();
+//
+//         } catch (error) {
+//             logger.error('Error in middleware.requireRegistration', error);
+//             await errorHandler(ctx, error);
+//         }
+//     };
+// }
+//
+// module.exports = requireVerification;

@@ -68,6 +68,7 @@ router.callbackQuery('page_info_module', requireRegistration(), requireStudentRo
 
 // Обработка команды /start
 router.command('start', StudentController.handleStart);
+router.command('token', StudentController.acceptInvitation);
 
 // Обработка команд показа профиля
 router.command('profile', requireRegistration(), requireHandledAnswer(), StudentController.showStudentInfo);
@@ -91,5 +92,7 @@ router.on('message:text', requireRegistration(), requireStudentRole(), async (ct
     const handled = await QuestionController.handleTextAnswer(ctx);
     if (!handled) await next();
 });
+
+
 
 module.exports = router; 

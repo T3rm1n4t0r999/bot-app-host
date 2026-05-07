@@ -12,9 +12,10 @@ class StudentService {
     /**
      * Регистрация студента
      * @param {Object} userData - Данные пользователя
+     * @param organizationId
      * @returns {Promise<Object>}
      */
-    async registerStudent(userData) {
+    async registerStudent(userData, organizationId) {
         const transaction = await sequelize.transaction();
         try {
             const telegramId = userData.id.toString();
@@ -26,7 +27,7 @@ class StudentService {
                     firstname: userData.first_name || '',
                     lastname: userData.last_name || '',
                     username: userData.username || '',
-                    organization_id: userData?.organizationId || 1,
+                    organization_id: organizationId,
                     role: 'student'
                 };
                 
@@ -120,6 +121,7 @@ class StudentService {
             throw e;
         }
     }
+
 }
 
 module.exports = StudentService;

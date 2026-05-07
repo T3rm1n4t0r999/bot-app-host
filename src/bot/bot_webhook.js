@@ -1,5 +1,5 @@
 // bot/bot
-const { Bot } = require('grammy');
+const { Bot: Bot_webhook } = require('grammy');
 const mainRoutes = require('../routes/commands'); // Ваши команды
 const logger = require('../logger/logger');
 
@@ -8,7 +8,7 @@ const logger = require('../logger/logger');
  */
 async function createBotInstance(token) {
     try {
-        const bot = new Bot(token);
+        const bot = new Bot_webhook(token);
 
 
         await bot.init();

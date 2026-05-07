@@ -27,6 +27,28 @@ class StudentRepository extends BaseRepository {
         }
     }
 
+    async confirmInvitation(studentId, organizationId) {
+        const transaction = options.transaction || await this.model.sequelize.transaction();
+
+        try {
+
+            // Обновляем запись
+            const updateData = {
+                organization_id: organizationId,
+            };
+
+            await student.update(updateData, { transaction });
+
+            await transaction.commit();
+
+            return student;
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error confirming invitation:', error);
+            throw error;
+        }
+    }
+
     /**
      * Получить студентов с сортировкой по баллам
      * @param limit

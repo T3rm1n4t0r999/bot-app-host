@@ -2,9 +2,11 @@ const StudentService = require('../services/studentService');
 const errorHandler = require("../utils/errorHandler");
 const keyboardFactory = require("../services/keyboardFactory");
 const logger = require('../logger/logger');
+const InvitationService = require("../services/invitationService");
+const {NotFoundError} = require("../utils/errors");
 // Создаем экземпляр сервиса
 const studentService = new StudentService();
-
+const invitationService = new InvitationService();
 class studentController {
     /**
      * Получение информации о студенте
@@ -61,7 +63,36 @@ class studentController {
      */
     static async handleStart(ctx) {
         try {
-            const student = await studentService.registerStudent(ctx.from);
+            await ctx.reply('Добро пожаловать! Пришлите сюда код верификации отправленный вам на почту\n' +
+                'Пример: /token ваш_код')
+        } catch (error) {
+            logger.error('Error in StudentController.handleStart', error);
+            await errorHandler(ctx, error);
+        }
+    }
+
+    static async acceptInvitation(ctx){
+        try{
+            const commandText = ctx.message.text;
+
+            const token = commandText.split(' ')[1];
+
+            if (!token) {
+                await ctx.reply('Пожалуйста, укажите токен.\n' +
+                    'Пример: /token ваш_код');
+                return;
+            }
+            const botUsername = '@' + ctx.me.username;
+            const invitation = await invitationService.verifyStudentInvitation(token, botUsername);
+
+            if (!invitation) {
+                await ctx.reply(
+                    'Токен организации неверный или не существует.'
+                )
+                return;
+            }
+            const orgId = invitation?.organization_id;
+            const student = await studentService.registerStudent(ctx.from, orgId);
             const keyboard = keyboardFactory.createMainMenuKeyboard();
 
             await ctx.reply(
@@ -69,7 +100,7 @@ class studentController {
                 { reply_markup: keyboard }
             );
         } catch (error) {
-            logger.error('Error in StudentController.handleStart', error);
+            logger.error('Error in StudentController.acceptInvitation', error);
             await errorHandler(ctx, error);
         }
     }
