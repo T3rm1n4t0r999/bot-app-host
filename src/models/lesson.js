@@ -30,7 +30,15 @@ const Lesson = sequelize.define('Lesson', {
     organization_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    }
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
 }, {
     tableName: 'lessons',
     timestamps: true,

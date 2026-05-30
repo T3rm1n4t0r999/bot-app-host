@@ -48,11 +48,16 @@ class BaseRepository {
      * @param {Object} options - Опции для запроса
      * @returns {Promise<Array>}
      */
+// repository/baseRepository.js
     async findAll(options = {}) {
         try {
             return await this.model.findAll(options);
         } catch (error) {
-            logger.error(`Error finding all ${this.model.name}:`);
+            logger.error(`Error finding all ${this.model.name}:`, {
+                message: error.message,
+                sql: error.sql, // SQL запрос, который вызвал ошибку
+                parent: error.parent ? error.parent.message : null
+            });
             throw error;
         }
     }

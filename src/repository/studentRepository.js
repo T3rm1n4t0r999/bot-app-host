@@ -3,6 +3,7 @@ const Student = require('../models/student');
 const StudentCourse = require('../models/studentCourse');
 const Course = require('../models/course');
 const logger = require('../logger/logger');
+const {GroupStudent, GroupCourse} = require("../models");
 
 class StudentRepository extends BaseRepository {
     constructor() {
@@ -25,6 +26,19 @@ class StudentRepository extends BaseRepository {
             logger.error(`Error finding student by Telegram ID:${telegramId}`, error);
             throw error;
         }
+    }
+
+    async assignGroup(student, groupId) {
+        // Проверяем, существует ли уже связь
+        const studentId = student?.id ?? student;
+        const existing = await GroupStudent.findOne({
+            where: { groupId, studentId }
+        });
+        if (existing) return;
+
+        // Добавляем студента в группу
+        return await GroupStudent.create({ groupId, studentId });
+
     }
 
     async confirmInvitation(studentId, organizationId) {

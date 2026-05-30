@@ -1,26 +1,25 @@
-// models/studentHomework.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const StudentHomework = sequelize.define('StudentHomework', {
+const StudentExam = sequelize.define('StudentExam', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    homeworkId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'homeworks',
-            key: 'id'
-        }
-    },
     studentId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         references: {
             model: 'students',
+            key: 'id'
+        }
+    },
+    examId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'exams',
             key: 'id'
         }
     },
@@ -39,9 +38,15 @@ const StudentHomework = sequelize.define('StudentHomework', {
         allowNull: false,
     }
 }, {
-    tableName: 'student_homeworks',
-    timestamps: true,
+    tableName: 'student_exams',
+    timestamps: false,
     underscored: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['student_id', 'exam_id']
+        }
+    ]
 });
 
-module.exports = StudentHomework;
+module.exports = StudentExam;

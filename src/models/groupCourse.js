@@ -1,26 +1,25 @@
-// models/studentHomework.js
 const { sequelize } = require('../database/db');
 const { DataTypes } = require('sequelize');
 
-const StudentHomework = sequelize.define('StudentHomework', {
+const GroupCourse = sequelize.define('GroupCourse', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    homeworkId: {
-        type: DataTypes.INTEGER,
+    groupId: {
+        type: DataTypes.BIGINT,
         allowNull: false,
         references: {
-            model: 'homeworks',
+            model: 'groups',
             key: 'id'
         }
     },
-    studentId: {
+    courseId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'students',
+            model: 'courses',
             key: 'id'
         }
     },
@@ -34,14 +33,10 @@ const StudentHomework = sequelize.define('StudentHomework', {
         allowNull: false,
         defaultValue: new Date()
     },
-    organizationId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    }
 }, {
-    tableName: 'student_homeworks',
-    timestamps: true,
+    tableName: 'group_course',
+    timestamps: false,
     underscored: true,
 });
 
-module.exports = StudentHomework;
+module.exports = GroupCourse;

@@ -1,6 +1,8 @@
 const BaseRepository = require(`./baseRepository`);
 const Question = require("../models/question");
 const Logger = require("../logger/logger");
+const {resolveModelType} = require("../utils/modelResolver");
+const File = require('../models/file');
 class QuestionRepository extends BaseRepository {
     constructor() {
         super(Question);
@@ -14,12 +16,29 @@ class QuestionRepository extends BaseRepository {
      */
     async findAllQuestions(entityId, entityType) {
         try {
+
             return await this.findAll({
                 where: {
                     questionableId: entityId,
                     questionableType: entityType,
+                    is_active: true,
                 },
                 order: [["order", "ASC"]],
+            });
+        } catch (e) {
+            Logger.error(e);
+            throw e;
+        }
+    }
+
+    async findByIdWithFiles(questionId) {
+        try {
+            return await Question.findByPk(questionId, {
+                include: [{
+                    model: File,
+                    as: 'files',
+                    required: false,
+                }]
             });
         } catch (e) {
             Logger.error(e);
@@ -36,7 +55,8 @@ class QuestionRepository extends BaseRepository {
         try {
             return await this.findAll({
                 where: {
-                    id: questionIds
+                    id: questionIds,
+                    is_active: true,
                 }
             });
         } catch (e) {

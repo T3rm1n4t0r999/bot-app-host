@@ -9,6 +9,7 @@ class RedisService {
         this.ENTITY_TYPES = {
             TASK : 'lesson_task',
             HOMEWORK : 'homework',
+            EXAM : 'exam',
         }
     }
 
@@ -23,19 +24,19 @@ class RedisService {
     }
 
     // Ключи для хранения
-    getUserQuestionKey(userId, questionId, entityType =  this.ENTITY_TYPES.TASK) {
+    getUserQuestionKey(userId, questionId, entityType) {
         return `${entityType}:user:${userId}:question:${questionId}`;
     }
 
-    getTaskProgressKey(userId, entityId, entityType =  this.ENTITY_TYPES.TASK) {
+    getTaskProgressKey(userId, entityId, entityType) {
         return `${entityType}:user:${userId}:task:${entityId}:progress`;
     }
 
-    getUserTextKey(userId, questionId, entityType =  this.ENTITY_TYPES.TASK) {
+    getUserTextKey(userId, questionId, entityType ) {
         return `${entityType}:user:${userId}:question:${questionId}:text`;
     }
 
-    getAwaitingTextKey(userId, entityType =  this.ENTITY_TYPES.TASK) {
+    getAwaitingTextKey(userId, entityType ) {
         // Храним текущий вопрос, для которого ожидаем текстовый ответ
         return `${entityType}:user:${userId}:await_text`;
     }
@@ -47,7 +48,7 @@ class RedisService {
     }
 
     // Прогресс задания
-    async saveTaskProgress(userId, entityId, questionIds, currentIndex = 0, entityType = this.ENTITY_TYPES.TASK) {
+    async saveTaskProgress(userId, entityId, questionIds, currentIndex = 0, entityType) {
         const key = this.getTaskProgressKey(userId, entityId, entityType);
         const progress = {
             questionIds,
@@ -58,23 +59,23 @@ class RedisService {
         await this.setWithTTL(key, JSON.stringify(progress));
     }
 
-    async getTaskProgress(userId, entityId, entityType = this.ENTITY_TYPES.TASK) {
+    async getTaskProgress(userId, entityId, entityType ) {
         const key = this.getTaskProgressKey(userId, entityId, entityType);
         const data = await this.client.get(key);
         return data ? JSON.parse(data) : null;
     }
 
-    async updateCurrentQuestion(userId, entityId, currentIndex, entityType = this.ENTITY_TYPES.TASK) {
+    async updateCurrentQuestion(userId, entityId, currentIndex, entityType) {
         const progress = await this.getTaskProgress(userId, entityId, entityType);
         if (progress) {
             progress.currentIndex = currentIndex;
-            const key = this.getTaskProgressKey(userId, entityId);
+            const key = this.getTaskProgressKey(userId, entityId, entityType);
             await this.setWithTTL(key, JSON.stringify(progress));
         }
     }
 
     // В RedisService добавьте методы для работы с ключами
-    async toggleUserOption(userId, questionId, optionKey, entityType = this.ENTITY_TYPES.TASK) {
+    async toggleUserOption(userId, questionId, optionKey, entityType) {
         const key = this.getUserQuestionKey(userId, questionId, entityType);
         const isMember = await this.client.sIsMember(key, optionKey);
 
@@ -88,43 +89,42 @@ class RedisService {
         return !isMember;
     }
 
-    async setUserOption(userId, questionId, optionKey, entityType = this.ENTITY_TYPES.TASK) {
+    async setUserOption(userId, questionId, optionKey, entityType) {
         const key = this.getUserQuestionKey(userId, questionId, entityType);
         await this.client.del(key);
         await this.client.sAdd(key, optionKey);
         await this.client.expire(key, this.TTL);
     }
 
-    async getUserSelectedOptions(userId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async getUserSelectedOptions(userId, questionId, entityType) {
         const key = this.getUserQuestionKey(userId, questionId, entityType);
         return await this.client.sMembers(key);
     }
 
-    async getUserSelectedOption(userId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async getUserSelectedOption(userId, questionId, entityType ) {
         const key = this.getUserQuestionKey(userId, questionId, entityType);
         const members = await this.client.sMembers(key);
         return members.length > 0 ? members[0] : null;
     }
 
     // Ответы на вопросы (text/code)
-    async setUserTextAnswer(userId, questionId, text, entityType = this.ENTITY_TYPES.TASK) {
+    async setUserTextAnswer(userId, questionId, text, entityType) {
         const key = this.getUserTextKey(userId, questionId, entityType);
         await this.client.set(key, text);
         await this.client.expire(key, this.TTL);
     }
 
-    async getUserTextAnswer(userId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async getUserTextAnswer(userId, questionId, entityType) {
         const key = this.getUserTextKey(userId, questionId, entityType);
         return await this.client.get(key);
     }
 
-    async clearUserTextAnswer(userId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async clearUserTextAnswer(userId, questionId, entityType) {
         const key = this.getUserTextKey(userId, questionId, entityType);
         await this.client.del(key);
     }
 
-    // Ожидание текстового ответа (маркер состояния)
-    async setAwaitingTextAnswer(userId, entityId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async setAwaitingTextAnswer(userId, entityId, questionId, entityType) {
         const key = this.getAwaitingTextKey(userId, entityType);
         await this.setWithTTL(key, JSON.stringify({
             entityId: entityId,
@@ -133,31 +133,37 @@ class RedisService {
         }));
     }
 
-    async getAwaitingTextAnswer(userId, entityType = this.ENTITY_TYPES.TASK) {
-        const key = this.getAwaitingTextKey(userId, entityType);
-        const data = await this.client.get(key);
-        return data ? JSON.parse(data) : null;
+    async getAwaitingTextAnswer(userId) {
+        for (const entityType of Object.values(this.ENTITY_TYPES)) {
+            const key = this.getAwaitingTextKey(userId, entityType);
+            const data = await this.client.get(key);
+            if (data) {
+                // Нашли! Возвращаем объект, внутри которого уже есть правильный entityType
+                return JSON.parse(data);
+            }
+        }
+        return null; // Не найдено ни в одном типе
     }
 
-    async clearAwaitingTextAnswer(userId, entityType = this.ENTITY_TYPES.TASK) {
+    async clearAwaitingTextAnswer(userId, entityType) {
         const key = this.getAwaitingTextKey(userId, entityType);
         await this.client.del(key);
     }
 
     // Очистка
-    async clearUserQuestionState(userId, questionId, entityType = this.ENTITY_TYPES.TASK) {
+    async clearUserQuestionState(userId, questionId, entityType) {
         const key = this.getUserQuestionKey(userId, questionId, entityType);
         await this.client.del(key);
     }
 
-    async clearTaskProgress(userId, entityId, entityType = this.ENTITY_TYPES.TASK) {
+    async clearTaskProgress(userId, entityId, entityType) {
         const key = this.getTaskProgressKey(userId, entityId, entityType);
         console.log("progress in redis was deleted");
         await this.client.del(key);
     }
 
     // Получение всех ответов для задания (без знания типов)
-    async getUserTaskAnswers(userId, entityId, questionIds, entityType = this.ENTITY_TYPES.TASK) {
+    async getUserTaskAnswers(userId, entityId, questionIds, entityType) {
         const answers = {};
         for (const questionId of questionIds) {
             // Для choice типов ответы хранятся в set, для текстовых — в строке
@@ -178,6 +184,69 @@ class RedisService {
             // Дополнить для file, code
         }
         return answers;
+    }
+
+    getExamTimerKey(userId, examId) {
+        return `exam:user:${userId}:exam:${examId}:timer`;
+    }
+
+// Сохранить время старта экзамена
+    async saveExamStartTime(userId, examId) {
+        const key = this.getExamTimerKey(userId, examId);
+        const data = {
+            startedAt: new Date().toISOString(),
+        };
+        await this.setWithTTL(key, JSON.stringify(data));
+    }
+
+// Получить время старта экзамена
+    async getExamStartTime(userId, examId) {
+        const key = this.getExamTimerKey(userId, examId);
+        const data = await this.client.get(key);
+        return data ? JSON.parse(data) : null;
+    }
+
+// Получить оставшееся время экзамена в секундах
+    async getExamRemainingTime(userId, examId, timeLimitMinutes) {
+        const startData = await this.getExamStartTime(userId, examId);
+        if (!startData) return null;
+        const startedAt = new Date(startData.startedAt).getTime();
+        const now = Date.now();
+        const elapsed = (now - startedAt) / 1000; // секунды
+        const totalSeconds = timeLimitMinutes * 60;
+        const remaining = Math.max(0, totalSeconds - elapsed);
+        return remaining;
+    }
+
+// Очистить таймер экзамена
+    async clearExamTimer(userId, examId) {
+        const key = this.getExamTimerKey(userId, examId);
+        await this.client.del(key);
+    }
+
+// ===== Ключ для флага таймаута экзамена =====
+    getExamTimeoutFlagKey(userId, examId) {
+        return `exam:user:${userId}:exam:${examId}:timeout`;
+    }
+
+// ===== Сохранить флаг завершения по таймауту =====
+    async saveExamTimeoutFlag(userId, examId, timeout = true) {
+        const key = this.getExamTimeoutFlagKey(userId, examId);
+        await this.client.set(key, timeout ? '1' : '0');
+        await this.client.expire(key, this.TTL); // 24 часа
+    }
+
+// ===== Получить флаг таймаута =====
+    async getExamTimeoutFlag(userId, examId) {
+        const key = this.getExamTimeoutFlagKey(userId, examId);
+        const value = await this.client.get(key);
+        return value === '1';
+    }
+
+// ===== Очистить флаг таймаута =====
+    async clearExamTimeoutFlag(userId, examId) {
+        const key = this.getExamTimeoutFlagKey(userId, examId);
+        await this.client.del(key);
     }
 }
 

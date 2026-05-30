@@ -1,15 +1,17 @@
 const RedisService = require("../services/redisService");
-const QuestionService = require("../services/questionService");
+const QuestionService = require("../services/QuestionService");
 const StudentService = require("../services/studentService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const LessonTaskController = require("./lessonTaskController");
 const HomeworkController = require("./homeworkController");
-const HomeworkService = require("../services/homeworkService");
-const {InlineKeyboard} = require("grammy");
+const LessonService = require("../services/lessonService");
+const ExamService = require("../services/examService");
+const ExamController = require("./examController");
 
 const questionService = new QuestionService();
 const studentService = new StudentService();
-const homeworkService = new HomeworkService();
+const lessonService = new LessonService();
+const examService = new ExamService();
 
 class QuestionController {
     static async handleCallbackQuery(ctx) {
@@ -60,6 +62,9 @@ class QuestionController {
                     await HomeworkController.backToHomework(ctx, entityId);
                     break;
                 }
+                case 'exam': {
+                    await ExamController.backToExam(ctx, entityId);
+                }
             }
         } catch (e) {
             console.error(e);
@@ -80,11 +85,72 @@ class QuestionController {
             const ordered = questions.sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
             const questionIds = ordered.map(q => q.id);
             const userId = ctx.from.id.toString();
+
+            // 🔥 Проверяем, не запущен ли уже таймер для экзамена
+            if (entityType === 'exam') {
+                const existingTimer = await RedisService.getExamStartTime(userId, entityId);
+                if (existingTimer) {
+                    // Таймер уже идёт — просто рендерим первый вопрос
+                    await QuestionController.renderQuestionByIndex(ctx, entityId, 0, entityType);
+                    return;
+                }
+            }
+            // Если это экзамен, запускаем таймер
+            if (entityType === 'exam') {
+                const exam = await examService.getExam(entityId); // нужно реализовать получение экзамена
+                if (exam && exam.timeLimit > 0) {
+                    await RedisService.saveExamStartTime(userId, entityId);
+                }
+            }
             await RedisService.saveTaskProgress(userId, entityId, questionIds, 0, entityType);
             await QuestionController.renderQuestionByIndex(ctx, entityId, 0, entityType);
         } catch (error) {
             console.error(`Error in startTask (${entityType}):`, error);
             await ctx.answerCallbackQuery('❌ Ошибка при начале задания');
+        }
+    }
+
+    static async updateQuestionMessage(ctx, text, keyboard, mediaUrl = null, isNewMessage = false) {
+        const currentMsg = ctx.callbackQuery?.message;
+        const isCurrentPhoto = !!currentMsg?.photo;
+        const isNextPhoto = !!mediaUrl;
+
+        // Если это новое сообщение или типы не совпадают – удаляем старое и отправляем новое
+        if (isNewMessage || (isCurrentPhoto !== isNextPhoto)) {
+            try {
+                await ctx.deleteMessage();
+            } catch (e) {
+                // сообщение могло быть уже удалено
+            }
+
+            if (isNextPhoto) {
+                await ctx.replyWithPhoto(mediaUrl, {
+                    caption: text,
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                });
+            } else {
+                await ctx.reply(text, {
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                });
+            }
+            return;
+        }
+
+        // Типы совпадают – редактируем существующее
+        if (isNextPhoto) {
+            await ctx.editMessageMedia({
+                type: 'photo',
+                media: mediaUrl,
+                caption: text,
+                parse_mode: 'Markdown'
+            }, { reply_markup: keyboard });
+        } else {
+            await ctx.editMessageText(text, {
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+            });
         }
     }
 
@@ -94,70 +160,92 @@ class QuestionController {
     static async renderQuestionByIndex(ctx, entityId, index, entityType, isNewMessage = false) {
         try {
             const userId = ctx.from.id.toString();
+
+            if (entityType === 'exam') {
+                const timeoutHandled = await QuestionController.checkAndHandleExamTimeout(ctx, entityId, entityType);
+                if (timeoutHandled) return;
+            }
+
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
             if (!progress) {
                 await QuestionController.startTask(ctx, entityId, entityType);
                 return;
             }
+
             const totalQuestions = progress.questionIds.length;
             const safeIndex = Math.max(0, Math.min(index, totalQuestions - 1));
             const questionId = progress.questionIds[safeIndex];
 
             await RedisService.updateCurrentQuestion(userId, entityId, safeIndex, entityType);
-            const question = await questionService.getQuestionById(questionId);
 
+            // Загружаем вопрос с файлами
+            const question = await questionService.getQuestionByIdWithFiles(questionId);
+            if (!question) {
+                await ctx.answerCallbackQuery('❌ Вопрос не найден');
+                return;
+            }
 
-            // Получаем ответ пользователя
             question.userAnswer = await QuestionController.getUserAnswer(userId, questionId, question.questionType, entityType);
 
-            let message = `Вопрос ${safeIndex + 1}/${totalQuestions}:\n\n`;
+            let message = `Вопрос ${safeIndex + 1}/${totalQuestions}:\n`;
+
+            if (entityType === 'exam') {
+                const exam = await examService.getExam(entityId);
+                if (exam && exam.timeLimit > 0) {
+                    const remaining = await RedisService.getExamRemainingTime(userId, entityId, exam.timeLimit);
+                    if (remaining !== null) {
+                        const minutes = Math.floor(remaining / 60);
+                        const seconds = Math.floor(remaining % 60);
+                        message += `Оставшееся время: ${minutes}:${seconds.toString().padStart(2, '0')}\n\n`;
+                    }
+                }
+            }
+
             message += `${question.question}\n`;
 
-            // Добавляем варианты ответов для choice вопросов
             if (question.questionType === 'multiple_choice' || question.questionType === 'single_choice') {
                 const options = typeof question.options === 'string'
                     ? JSON.parse(question.options)
                     : question.options;
-
-                options.forEach(option => {
-                    message += `\n${option.key}. ${option.value}\n`;
+                options.forEach((option, idx) => {
+                    message += `\n${idx + 1}: ${option.text}`;
                 });
             }
 
-            // Показываем превью текстового ответа
-            if ((question.questionType === 'text' || question.questionType === 'code') && question.userAnswer) {
+            if ((question.questionType === 'text' || question.questionType === 'free_text') && question.userAnswer) {
                 const preview = question.userAnswer.length > 200
                     ? `${question.userAnswer.slice(0, 200)}…`
                     : question.userAnswer;
                 message += `\nВаш ответ: \n${preview}\n`;
             }
 
-            // Получаем статистику ответов
-            const questionIds = progress.questionIds;
-            const answers = await RedisService.getUserTaskAnswers(userId, entityId, questionIds, entityType);
+            const answers = await RedisService.getUserTaskAnswers(userId, entityId, progress.questionIds, entityType);
             const answered = Object.keys(answers).length;
+            const hint = question?.explanation;
+            if (hint && hint.notEmpty > 0) {
+                message += `\n*Подсказка:* ${question.explanation}\n`;
+            }
 
             const keyboard = KeyboardFactory.createQuestionNavigation(question, entityId, safeIndex, totalQuestions, answered, entityType);
 
-            if (isNewMessage) {
-                await ctx.reply(message, {
-                    reply_markup: keyboard,
-                    parse_mode: 'Markdown'
-                });
-            } else {
-                await ctx.editMessageText(message, {
-                    reply_markup: keyboard,
-                    parse_mode: 'Markdown'
-                });
-                await ctx.answerCallbackQuery();
+            // Поиск изображения в файлах вопроса
+            let imageUrl = null;
+            if (question.files && question.files.length > 0) {
+                const imageFile = question.files.find(f => f.mime_type && f.mime_type.startsWith('image/'));
+                if (imageFile) {
+                    // Строим полный URL (замените на свою логику)
+                    const BASE_STORAGE_URL = process.env.FILE_STORAGE_URL || 'https://edubot.fun';
+                    const encodedPath = imageFile.path.split('/').map(encodeURIComponent).join('/');
+                    imageUrl = 'https://images.steamusercontent.com/ugc/2287327615050600030/CB6AB756334D3A684F41DAC92AE9BDBC07F86D2C/?imw=512&amp;imh=288&amp;ima=fit&amp;impolicy=Letterbox&amp;imcolor=%23000000&amp;letterbox=true';
+                    //imageUrl = `${BASE_STORAGE_URL}/storage/${encodedPath}`;
+                }
             }
+
+            await QuestionController.updateQuestionMessage(ctx, message, keyboard, imageUrl, isNewMessage);
 
         } catch (error) {
             console.error('Ошибка при отображении вопроса:', error);
-            const errorMessage = isNewMessage
-                ? '❌ Не удалось отобразить вопрос'
-                : '❌ Не удалось отобразить вопрос';
-
+            const errorMessage = '❌ Не удалось отобразить вопрос';
             if (isNewMessage) {
                 await ctx.reply(errorMessage);
             } else {
@@ -165,6 +253,7 @@ class QuestionController {
             }
         }
     }
+
 
     /**
      * Вспомогательный метод для получения ответа пользователя
@@ -177,7 +266,7 @@ class QuestionController {
                 return await RedisService.getUserSelectedOption(userId, questionId, entityType);
             case 'text':
                 return await RedisService.getUserTextAnswer(userId, questionId, entityType);
-            case 'code':
+            case 'free_text':
                 return await RedisService.getUserTextAnswer(userId, questionId, entityType);
             default:
                 return null;
@@ -187,12 +276,20 @@ class QuestionController {
     /**
      * Обработка multiple choice
      */
+// Исправление поиска индекса во всех методах
     static async toggleMultiOption(ctx, entityId, questionId, optionKey, entityType) {
         try {
+            if (entityType === 'exam') {
+                const timeoutHandled = await QuestionController.checkAndHandleExamTimeout(ctx, entityId, entityType);
+                if (timeoutHandled) return;
+            }
+
             const userId = ctx.from.id.toString();
             await RedisService.toggleUserOption(userId, questionId, optionKey, entityType);
+
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
-            const index = progress?.questionIds.findIndex(id => id === questionId.toString()) ?? 0;
+            const index = progress?.questionIds.findIndex(id => id == questionId) ?? 0;
+
             await QuestionController.renderQuestionByIndex(ctx, entityId, index, entityType);
         } catch (error) {
             console.error('Ошибка toggleMultiOption:', error);
@@ -200,15 +297,19 @@ class QuestionController {
         }
     }
 
-    /**
-     * Обработка single choice
-     */
     static async selectSingleOption(ctx, entityId, questionId, optionKey, entityType) {
         try {
+            if (entityType === 'exam') {
+                const timeoutHandled = await QuestionController.checkAndHandleExamTimeout(ctx, entityId, entityType);
+                if (timeoutHandled) return;
+            }
+
             const userId = ctx.from.id.toString();
             await RedisService.setUserOption(userId, questionId, optionKey, entityType);
+
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
-            const index = progress?.questionIds.findIndex(id => id === questionId.toString()) ?? 0;
+            const index = progress?.questionIds.findIndex(id => id == questionId) ?? 0;
+
             await QuestionController.renderQuestionByIndex(ctx, entityId, index, entityType);
         } catch (error) {
             console.error('Ошибка selectSingleOption:', error);
@@ -216,11 +317,12 @@ class QuestionController {
         }
     }
 
-    /**
-     * Ожидание текстового ответа
-     */
     static async awaitTextAnswer(ctx, entityId, questionId, entityType) {
         try {
+            if (entityType === 'exam') {
+                const timeoutHandled = await QuestionController.checkAndHandleExamTimeout(ctx, entityId, entityType);
+                if (timeoutHandled) return;
+            }
             const userId = ctx.from.id.toString();
             await RedisService.setAwaitingTextAnswer(userId, entityId, questionId, entityType);
             await ctx.answerCallbackQuery('✏️ Введите текст ответа сообщением ниже');
@@ -240,9 +342,14 @@ class QuestionController {
             const awaiting = await RedisService.getAwaitingTextAnswer(userId);
             if (!awaiting) return false;
 
-            const {entityId, questionId, entityType } = awaiting;
-            const text = ctx.message.text?.trim();
+            const { entityId, questionId, entityType } = awaiting;
+            if (entityType === 'exam') {
+                const timeoutHandled = await QuestionController.checkAndHandleExamTimeout(ctx, entityId, entityType);
+                if (timeoutHandled) return true;
+            }
 
+
+            const text = ctx.message.text?.trim();
             if (!text) {
                 await ctx.reply('❌ Ответ пуст. Введите текст или нажмите кнопки навигации.');
                 return true;
@@ -252,10 +359,9 @@ class QuestionController {
             await RedisService.clearAwaitingTextAnswer(userId, entityType);
 
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
-            const index = progress?.questionIds.findIndex(id => id === questionId.toString()) ?? 0;
-            const nextIndex = Math.min(index + 1, (progress?.questionIds.length ?? 1) - 1);
+            const index = progress?.questionIds.findIndex(id => id == questionId) ?? 0;
 
-            await QuestionController.renderQuestionByIndex(ctx, entityId, nextIndex, entityType, true);
+            await QuestionController.renderQuestionByIndex(ctx, entityId, index, entityType, true);
             return true;
         } catch (error) {
             console.error('Ошибка handleTextAnswer:', error);
@@ -283,16 +389,8 @@ class QuestionController {
             const message = `📊 Прогресс: ${answered}/${progress.questionIds.length}`;
             const keyboard = KeyboardFactory.createProgressKeyboard(entityId, progress.currentIndex ?? 0, entityType);
 
-            try {
-                await ctx.deleteMessage();
-            } catch (error) {
-                console.log('Не удалось удалить сообщение:', error);
-            }
-
-            await ctx.reply(message, {
-                reply_markup: keyboard,
-                parse_mode: 'Markdown'
-            });
+            // Прогресс показываем всегда текстом (без картинки)
+            await QuestionController.updateQuestionMessage(ctx, message, keyboard, null, true);
             await ctx.answerCallbackQuery();
         } catch (error) {
             console.error('Ошибка showProgress:', error);
@@ -309,17 +407,17 @@ class QuestionController {
             const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
 
             if (progress) {
-                // Очищаем ответы
                 for (const qId of progress.questionIds) {
                     await RedisService.clearUserQuestionState(userId, qId, entityType);
                     await RedisService.clearUserTextAnswer(userId, qId, entityType);
                 }
                 await RedisService.clearTaskProgress(userId, entityId, entityType);
-                // Восстанавливаем прогресс
                 await RedisService.saveTaskProgress(userId, entityId, progress.questionIds, 0, entityType);
             }
 
-            await QuestionController.renderQuestionByIndex(ctx, entityId, 0, entityType);
+            // Удаляем предыдущее сообщение и показываем первый вопрос как новое
+            try { await ctx.deleteMessage(); } catch (e) {}
+            await QuestionController.renderQuestionByIndex(ctx, entityId, 0, entityType, true);
         } catch (error) {
             console.error('Ошибка restartTask:', error);
             await ctx.answerCallbackQuery('❌ Не удалось начать заново');
@@ -328,13 +426,21 @@ class QuestionController {
 
     /**
      * Завершение задания
+    /**
+     * Завершение задания
+     * @param {Object} ctx - Контекст Grammy
+     * @param {number} entityId - ID сущности
+     * @param {string} entityType - Тип сущности
+     * @param {Object} options - Дополнительные опции: { timeout: boolean }
      */
-    static async finishTask(ctx, entityId, entityType) {
+    static async finishTask(ctx, entityId, entityType, options = {}) {
         try {
             const userId = ctx.from.id.toString();
             const studentId = ctx.state?.student?.id;
-            const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
+            const organizationId = ctx.state?.student?.organization_id;
+            const { timeout = false } = options;
 
+            const progress = await RedisService.getTaskProgress(userId, entityId, entityType);
             if (!progress) {
                 await ctx.answerCallbackQuery('❌ Прогресс не найден');
                 return;
@@ -343,86 +449,94 @@ class QuestionController {
             const questionIds = progress.questionIds;
             const answers = await RedisService.getUserTaskAnswers(userId, entityId, questionIds, entityType);
 
-            // Проверяем, что все вопросы отвечены
-            if (questionIds.length !== Object.keys(answers).length) {
+            if (!timeout && questionIds.length !== Object.keys(answers).length) {
                 await ctx.answerCallbackQuery('❌ Не все вопросы решены!');
                 return;
             }
-            if (entityId === 36) {
-                // 🔥 1. СРАЗУ удаляем сообщение с последним вопросом (до долгих операций!)
-                await ctx.deleteMessage().catch(err => {
-                    console.log('⚠️ Не удалось удалить вопрос:', err?.description || err?.message);
-                });
 
-                // 🔥 2. Сразу отвечаем на callback (Telegram требует ответ за 3 сек)
-                await ctx.answerCallbackQuery('⏳ Проверяю ответы...').catch(() => {
-                });
-            }
-            // Вычисляем результаты
+            const questions = await questionService.getQuestionsByIds(questionIds);
+            const hasFreeText = questions.some(q => q.questionType === 'free_text');
             const result = await questionService.calculateResults(questionIds, answers);
-            const resultsLines = [];
-            resultsLines.push(`Результат: ${result.earnedPoints}/${result.maxPoints}`);
+            const maxPoints = await questionService.getMaxScore(entityType, entityId);
 
-            // Сохраняем результаты для студента
+            const resultsLines = [];
+
+            if (timeout) {
+                resultsLines.push(`⏰ Время вышло!`);
+            }
+
+            resultsLines.push(`Результат: ${result.earnedPoints}/${maxPoints}`);
+            const checked = !hasFreeText;
+
             if (studentId) {
                 const bestResult = await studentService.findBestResult(studentId, entityType, entityId);
 
                 await studentService.saveStudentResults({
-                    studentId: studentId,
+                    organizationId,
+                    studentId,
+                    checked,
                     points: result.earnedPoints,
-                    answers: answers,
+                    maxPoints: maxPoints,
+                    answers: Object.entries(answers).map(([qId, answer]) => ({
+                        question_id: parseInt(qId),
+                        answer: answer
+                    })),
                     progressableId: entityId,
-                    progressableType: entityType
+                    progressableType: entityType,
+                    finishedByTimeout: timeout,
                 });
 
-                let isNewRecord = false;
-                const awardedPoints =  result.earnedPoints - (bestResult?.points ?? 0);
-                if (awardedPoints > 0) {
-                    isNewRecord = true;
-                }
+                const previousBest = bestResult?.points ?? 0;
+                const awardedPoints = result.earnedPoints - previousBest;
 
                 if (!bestResult) {
                     resultsLines.push(`🎯 Первая попытка!`);
-                    if(entityType === 'lesson_task')
-                        await homeworkService.addHomeworkToStudentByTaskId(studentId, entityId);
-                } else if (isNewRecord) {
-                    resultsLines.push(`🎉 Новый рекорд! Прошлый лучший результат: ${bestResult?.points}/${result.maxPoints}`);
-                } else if (bestResult?.points === result.earnedPoints) {
-                    resultsLines.push(`📊 Такой же результат как в лучшей попытке: ${result.earnedPoints}/${result.maxPoints}`);
+                    await studentService.addPoints(studentId, result.earnedPoints);
+                } else if (awardedPoints > 0) {
+                    resultsLines.push(`🎉 Новый рекорд! Прошлый лучший: ${previousBest}/${maxPoints}`);
+                    await studentService.addPoints(studentId, awardedPoints);
+                } else if (awardedPoints === 0 && bestResult) {
+                    resultsLines.push(`📊 Такой же результат как в лучшей попытке: ${previousBest}/${maxPoints}`);
                 } else {
-                    resultsLines.push(`📊 Текущий результат: ${result.earnedPoints}/${result.maxPoints} (лучший: ${bestResult?.points}/${result.maxPoints})`);
+                    resultsLines.push(`📊 Текущий результат: ${result.earnedPoints}/${maxPoints} (лучший: ${previousBest}/${maxPoints})`);
                 }
 
-                // Начисляем баллы
-                if (awardedPoints > 0) {
-                   await studentService.addPoints(studentId, awardedPoints);
+                let lessonId = null;
+                let moduleId = null;
+
+                if (entityType === 'lesson_task') {
+                    const task = await lessonService.getTaskContext(entityType, entityId);
+                    lessonId = task?.lessonId;
+                    moduleId = task?.moduleId;
+                }
+
+                if (lessonId) {
+                    const homework = await studentService.assignHomeworkIfReady(studentId, lessonId);
+                    if (homework) resultsLines.push(`Доступно новое домашнее задание!`);
+                }
+                if (moduleId) {
+                    const exam = await studentService.assignExamIfReady(studentId, moduleId);
+                    if (exam) resultsLines.push(`📝 Доступен новый экзамен!`);
                 }
             }
 
             // Очищаем прогресс
-            for (const qId of progress.questionIds) {
-                await RedisService.clearUserQuestionState(userId, qId, entityType);
-                await RedisService.clearUserTextAnswer(userId, qId, entityType);
+            await QuestionController.cleanupProgress(userId, progress, entityType);
+            if (entityType === 'exam') {
+                await RedisService.clearExamTimer(userId, entityId);
+                await RedisService.clearExamTimeoutFlag(userId, entityId); // 🔥 Очищаем флаг
             }
-            await RedisService.clearTaskProgress(userId, entityId, entityType);
 
-            if (entityId === 6) {
-                await QuestionController.finishQuizAndReward(
-                    ctx,
-                    result.earnedPoints,  // score
-                    result.maxPoints,     // total
-                    entityId              // taskId
-                );
-            }else{
-                const message = resultsLines.join('\n');
-                const keyboard = KeyboardFactory.createResultsKeyboard(entityId, entityType);
+            const message = resultsLines.join('\n');
+            const keyboard = KeyboardFactory.createResultsKeyboard(entityId, entityType);
 
-                await ctx.editMessageText(message, {
-                    reply_markup: keyboard,
-                    parse_mode: 'Markdown'
-                });
+            if (timeout) {
+                await ctx.reply(message, { reply_markup: keyboard, parse_mode: 'Markdown' });
+            } else {
+                await QuestionController.updateQuestionMessage(ctx, message, keyboard, null, false);
                 await ctx.answerCallbackQuery();
             }
+            await ctx.answerCallbackQuery();
 
         } catch (error) {
             console.error('Ошибка finishTask:', error);
@@ -430,82 +544,46 @@ class QuestionController {
         }
     }
 
-    static async safeSendText(ctx, text, keyboard, parseMode = 'Markdown') {
+    /**
+     * Проверяет, истекло ли время экзамена, и при необходимости завершает его
+     * @returns {Promise<boolean>} true, если время истекло и экзамен завершен
+     */
+    static async checkAndHandleExamTimeout(ctx, entityId, entityType) {
+        if (entityType !== 'exam') return false;
+
         try {
-            await ctx.editMessageText(text, {
-                reply_markup: keyboard,
-                parse_mode: parseMode
-            });
-        } catch (err) {
-            const errMsg = err?.message || err?.description || JSON.stringify(err);
-            const isMediaError = errMsg.includes('no text in the message') ||
-                errMsg.includes('message can\'t be edited') ||
-                errMsg.includes('400');
+            const userId = ctx.from.id.toString();
+            const exam = await examService.getExam(entityId);
 
-            if (isExcellent) {
-                // 🔥 1. Удаляем предыдущее сообщение (с результатами)
-                await ctx.deleteMessage().catch(err => {
-                    // Игнорируем ошибки, если сообщение уже удалено или старше 48ч
-                    console.log('⚠️ Не удалось удалить старое сообщение:', err?.description || err?.message);
-                });
+            if (!exam || exam.timeLimit <= 0) return false;
 
-                // 🔥 2. Отправляем НОВОЕ сообщение с фото-медалью
-                await ctx.replyWithPhoto(
-                    medalUrl,
-                    {
-                        caption: safeMessage,
-                        parse_mode: 'Markdown',
-                        reply_markup: keyboard
-                    }
-                );
-            } else {
-                // Если баллов мало → просто отправляем текстовое сообщение
-                await ctx.reply(safeMessage, {
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                });
+            const remaining = await RedisService.getExamRemainingTime(userId, entityId, exam.timeLimit);
+
+            if (remaining !== null && remaining <= 0) {
+                // Время истекло - завершаем экзамен с флагом timeout
+                // Сохраняем флаг в Redis
+                await RedisService.saveExamTimeoutFlag(userId, entityId, true);
+                await QuestionController.finishTask(ctx, entityId, entityType, { timeout: true });
+                return true;
             }
+            return false;
+        } catch (error) {
+            console.error('Ошибка при проверке таймера экзамена:', error);
+            return false; // Не блокируем пользователя при ошибке
         }
     }
 
-    static async finishQuizAndReward(ctx, score, total, taskId) {
-        const passedThreshold = 6; // Больше 8 баллов
-        const isExcellent = score > passedThreshold;
-
-        // 🔥 ССЫЛКА на картинку (замените на свою)
-        const medalUrl = 'https://fs.znanio.ru/8c0997/52/ed/d850d9d7fbaf56d391ba37e20641936a8a.jpg';
-
-        // Формируем текст (Markdown)
-        const rawMessage = isExcellent
-            ? `🎉 Поздравляем!\n\nТы набрал ${score} баллов из ${total}!\nОтличная работа — вот твоя заслуженная медаль 🏅`
-            : `📊 Твой результат: ${score}\* из ${total}\n\nПопробуй ещё раз! Для получения медали нужно набрать больше \*${passedThreshold}\* баллов.`;
-
-        // Экранируем для Markdown
-        const safeMessage = rawMessage.replace(/([_*`[\]])/g, '\\$1');
-
-        // Клавиатура
-        const keyboard = new InlineKeyboard()
-            .text('📚 К уроку', `view_lesson_task:${taskId}`)
-
-        if (isExcellent) {
-            // 🔥 Отправляем фото ПО ССЫЛКЕ — просто строка!
-            await ctx.replyWithPhoto(
-                medalUrl,  // ✅ Просто URL, без InputFile
-                {
-                    caption: safeMessage,
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                }
-            );
-        } else {
-            // Только текст, если баллов недостаточно
-            await ctx.reply(safeMessage, {
-                parse_mode: 'Markdown',
-                reply_markup: keyboard
-            });
-        }
+    static async forceFinishExam(ctx, entityId, entityType) {
+        return await QuestionController.finishTask(ctx, entityId, entityType, { timeout: true });
     }
 
+    static async cleanupProgress(userId, progress, entityType) {
+        for (const qId of progress.questionIds) {
+            await RedisService.clearUserQuestionState(userId, qId, entityType);
+            await RedisService.clearUserTextAnswer(userId, qId, entityType);
+        }
+        await RedisService.clearTaskProgress(userId, progress.entityId, entityType);
+    }
 }
 
 module.exports = QuestionController;

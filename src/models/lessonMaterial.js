@@ -19,13 +19,13 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    order: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
     materialType: {
-        type: DataTypes.ENUM('theory', 'example', 'reference', 'video_lesson', 'article'),
+        type: DataTypes.ENUM('theory', 'reference', 'video_lesson', 'article'),
         defaultValue: 'theory'
+    },
+    video_url: {
+        type: DataTypes.STRING,
+        allowNull: true,
     },
     lessonId: {
         type: DataTypes.INTEGER,
@@ -38,7 +38,15 @@ const LessonMaterial = sequelize.define('LessonMaterial', {
     organization_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    }
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
 }, {
     tableName: 'lesson_materials',
     timestamps: true,

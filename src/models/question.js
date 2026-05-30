@@ -13,7 +13,7 @@ const question = sequelize.define('Question', {
         allowNull: false
     },
     questionType: {
-        type: DataTypes.ENUM('single_choice', 'multiple_choice', 'text', 'code', 'file'),
+        type: DataTypes.ENUM('single_choice', 'multiple_choice', 'text'),
         defaultValue: 'text'
     },
     options: {
@@ -59,6 +59,10 @@ const question = sequelize.define('Question', {
     organization_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
     tableName: 'questions',

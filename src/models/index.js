@@ -11,10 +11,16 @@ const File = require('./file');
 const StudentCourse = require('./studentCourse');
 const Student = require('./student');
 const StudentHomework = require('./studentHomework');
+const Exam = require('./exam');
+const StudentExam = require('./studentExam');
 const Invitation = require('./invitation');
 const logger = require('../logger/logger');
 const Organization = require("./organization");
 const Bot = require("./bot");
+const Group = require("./group");
+const GroupStudent = require("./groupStudent");
+const GroupCourse = require("./groupCourse");
+const Question = require("./question");
 // Настройка ассоциаций
 function setupAssociations() {
     Course.hasMany(Module, {
@@ -54,7 +60,6 @@ function setupAssociations() {
         as: 'module'
     });
 
-    // Lesson -> LessonMaterial (один ко многим)
     Lesson.hasMany(LessonMaterial, {
         foreignKey: 'lessonId',
         as: 'lessonMaterials',
@@ -66,7 +71,6 @@ function setupAssociations() {
         as: 'lesson'
     });
 
-    // Lesson -> LessonTask (один к одному или один ко многим)
     Lesson.hasMany(LessonTask, {
         foreignKey: 'lessonId',
         as: 'tasks',
@@ -74,26 +78,28 @@ function setupAssociations() {
     });
 
     LessonTask.belongsTo(Lesson, {
-        foreignKey: 'lesson_id',
+        foreignKey: 'lessonId',
         as: 'lesson'
     });
 
     LessonMaterial.hasMany(File, {
-        foreignKey: 'fileable_id',
+        foreignKey: 'fileableId',
         constraints: false,
         scope: {
-            fileable_type: 'lesson_material'
+            fileable_type: 'LessonMaterial'  // ← PascalCase как в БД
         },
         as: 'files'
     });
 
     File.belongsTo(LessonMaterial, {
-        foreignKey: 'fileable_id',
+        foreignKey: 'fileableId',
         constraints: false,
+        scope: {
+            fileable_type: 'LessonMaterial'  // ← Тоже PascalCase
+        },
         as: 'lessonMaterial'
     });
 
-    // LessonTask имеет много файлов
     LessonTask.hasMany(File, {
         foreignKey: 'fileableId',
         constraints: false,
@@ -109,7 +115,7 @@ function setupAssociations() {
         as: 'lessonTask'
     });
 
-    // Homework имеет много файлов
+
     Homework.hasMany(File, {
         foreignKey: 'fileableId',
         constraints: false,
@@ -125,7 +131,7 @@ function setupAssociations() {
         as: 'homework'
     });
 
-    // Course имеет много файлов (например, для обложек курсов)
+
     Course.hasMany(File, {
         foreignKey: 'fileableId',
         constraints: false,
@@ -135,10 +141,22 @@ function setupAssociations() {
         as: 'files'
     });
 
+
     File.belongsTo(Course, {
         foreignKey: 'fileableId',
         constraints: false,
         as: 'course'
+    });
+
+    Course.hasMany(StudentCourse, {
+        foreignKey: 'courseId',
+        as: 'studentCourses'
+    });
+
+    Course.belongsToMany(Student, {
+        through: StudentCourse,
+        foreignKey: 'courseId',
+        as: 'studentsWithAccess'
     });
 
     // Student associations (без изменений)
@@ -146,12 +164,6 @@ function setupAssociations() {
         through: StudentCourse,
         foreignKey: 'studentId',
         as: 'accessibleCourses'
-    });
-
-    Course.belongsToMany(Student, {
-        through: StudentCourse,
-        foreignKey: 'courseId',
-        as: 'studentsWithAccess'
     });
 
     StudentCourse.belongsTo(Student, {
@@ -164,9 +176,43 @@ function setupAssociations() {
         as: 'course'
     });
 
+
+    Course.hasMany(GroupCourse, {
+        foreignKey: 'courseId',
+        as: 'groupCourses'
+    });
+
+    Course.belongsToMany(Group, {
+        through: GroupCourse,
+        foreignKey: 'courseId',
+        as: 'groupWithAccess'
+    });
+
+    // Student associations (без изменений)
+    Group.belongsToMany(Course, {
+        through: GroupCourse,
+        foreignKey: 'groupId',
+        as: 'accessibleCourses'
+    });
+
+    GroupCourse.belongsTo(Group, {
+        foreignKey: 'groupId',
+        as: 'group'
+    });
+
+    GroupCourse.belongsTo(Course, {
+        foreignKey: 'courseId',
+        as: 'course'
+    });
+
     // StudentProgress associations
     Student.hasMany(StudentProgress, {
         foreignKey: 'studentId',
+        onDelete: 'CASCADE'
+    });
+
+    Organization.hasMany(StudentProgress, {
+        foreignKey: 'organizationId',
         onDelete: 'CASCADE'
     });
 
@@ -175,31 +221,45 @@ function setupAssociations() {
         as: 'student'
     });
 
-    // Homework ↔ LessonTask (Домашнее задание принадлежит заданию урока)
-    Homework.belongsTo(LessonTask, {
-        foreignKey: 'taskId',
+    StudentProgress.belongsTo(Organization, {
+        foreignKey: 'organizationId',
+        as: 'organization'
+    });
+
+    // Homework ↔ LessonTask (Домашнее задание принадлежит уроку)
+    Homework.belongsTo(Lesson, {
+        foreignKey: 'lessonId',
         as: 'task'
     });
 
-    LessonTask.hasOne(Homework, {
-        foreignKey: 'taskId',
+    Lesson.hasOne(Homework, {
+        foreignKey: 'lessonId',
         as: 'homework'
+    });
+
+    Homework.hasMany(StudentHomework, {
+        foreignKey: 'homeworkId',
+        as: 'studentHomeworks'
     });
 
     Homework.belongsToMany(Student, {
         through: StudentHomework,
         foreignKey: 'homeworkId',
-        otherKey: 'studentId'
-        })
-
-    Homework.hasMany(StudentHomework, {
-        foreignKey: 'homeworkId',
-        as: 'studentSubmissions'
+        otherKey: 'studentId', // Явно указываем otherKey, чтобы избежать ошибок нейминга
+        as: 'studentsWithSubmissions'
     });
 
-    Student.hasMany(StudentHomework, {
+    Student.belongsToMany(Homework, {
+        through: StudentHomework,
         foreignKey: 'studentId',
-        as: 'homeworkSubmissions'
+        otherKey: 'homeworkId',
+        as: 'assignedHomeworks' // Алиас для получения всех ДЗ студента
+    });
+
+
+    StudentHomework.belongsTo(Student, {
+        foreignKey: 'studentId',
+        as: 'student'
     });
 
     StudentHomework.belongsTo(Homework, {
@@ -207,9 +267,102 @@ function setupAssociations() {
         as: 'homework'
     });
 
-    StudentHomework.belongsTo(Student, {
+    StudentExam.belongsTo(Student, {
         foreignKey: 'studentId',
         as: 'student'
+    })
+
+    StudentExam.belongsTo(Exam, {
+        foreignKey: 'examId',
+        as: 'exam'
+    })
+
+    Student.hasMany(StudentExam, {
+        foreignKey: 'StudentId',
+        as: 'student'
+    })
+
+    Exam.hasMany(StudentExam, {
+        foreignKey: 'examId',
+        as: 'studentExams'
+    })
+
+    Invitation.belongsTo(Group, {
+        foreignKey: 'groupId',
+        as: 'group'
+    });
+
+    Group.belongsToMany(Student, {
+        through: GroupStudent,
+        foreignKey: 'groupId',
+        otherKey: 'studentId',
+        as: 'students'
+    });
+
+    Student.belongsToMany(Group, {
+        through: GroupStudent,
+        foreignKey: 'studentId',
+        otherKey: 'groupId',
+        as: 'groups'
+    });
+
+    Question.hasMany(File, {
+        foreignKey: 'fileableId',
+        constraints: false,
+        scope: {
+            fileable_type: 'Question'
+        },
+        as: 'files'
+    });
+
+    File.belongsTo(Question, {
+        foreignKey: 'fileableId',
+        constraints: false,
+        scope: {
+            fileable_type: 'Question'
+        },
+        as: 'question'
+    });
+
+    LessonTask.hasMany(Question, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'lesson_task' },
+        as: 'questions'
+    });
+    Question.belongsTo(LessonTask, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'lesson_task' },
+        as: 'lessonTask'
+    });
+
+// Вопросы для домашних заданий
+    Homework.hasMany(Question, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'homework' },
+        as: 'questions'
+    });
+    Question.belongsTo(Homework, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'homework' },
+        as: 'homework'
+    });
+
+// Вопросы для экзаменов
+    Exam.hasMany(Question, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'exam' },
+        as: 'questions'
+    });
+    Question.belongsTo(Exam, {
+        foreignKey: 'questionableId',
+        constraints: false,
+        scope: { questionable_type: 'exam' },
+        as: 'exam'
     });
 
     logger.info('Setup associations completed.');
@@ -227,5 +380,9 @@ module.exports = {
     File,
     StudentCourse,
     Student,
+    GroupCourse,
+    Group,
+    GroupStudent,
+    Question,
     setupAssociations
 };

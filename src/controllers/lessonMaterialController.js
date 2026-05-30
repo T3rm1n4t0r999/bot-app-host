@@ -2,47 +2,8 @@ const { InlineKeyboard } = require("grammy");
 const LessonService = require("../services/lessonService");
 const KeyboardFactory = require("../services/keyboardFactory");
 const lessonService = new LessonService();
-const { InputFile } = require('grammy');
-const path = require('path');
-const fs = require('fs').promises;
-const logger = require('../logger/logger');
+
 class LessonMaterialController {
-
-    // 🔥 Максимально надёжный хелпер: если редактирование не удалось — шлём новое сообщение
-    static async safeSendText(ctx, text, keyboard, parseMode = 'Markdown') {
-        try {
-            // Пытаемся отредактировать текущее сообщение
-            await ctx.editMessageText(text, {
-                reply_markup: keyboard,
-                parse_mode: parseMode
-            });
-        } catch (err) {
-            // Ловим ВСЕ ошибки редактирования медиа-сообщений
-            const errMsg = err?.message || err?.description || JSON.stringify(err);
-            const isMediaError = errMsg.includes('no text in the message') ||
-                errMsg.includes('message can\'t be edited') ||
-                errMsg.includes('400');
-
-            if (isMediaError) {
-                // Не редактируем — удаляем старое и шлём новое
-                try {
-                    await ctx.deleteMessage();
-                } catch (delErr) {
-                    console.log('⚠️ Could not delete message:', delErr?.message);
-                }
-                // Отправляем НОВОЕ сообщение
-                await ctx.reply(text, {
-                    reply_markup: keyboard,
-                    parse_mode: parseMode
-                });
-            } else {
-                // Другие ошибки — логируем и пробрасываем
-                console.error('❌ Unexpected edit error:', errMsg);
-                throw err;
-            }
-        }
-    }
-
     static async handleCallbackQuery(ctx) {
         try {
             const callbackData = ctx.callbackQuery.data;
@@ -56,118 +17,196 @@ class LessonMaterialController {
                 const lessonId = parseInt(callbackData.split(':')[1]);
                 await LessonMaterialController.backToMaterials(ctx, lessonId);
             }
-            await ctx.answerCallbackQuery().catch(() => {});
         } catch (error) {
-            console.error('❌ handleCallbackQuery error:', error?.message || error);
-            await ctx.answerCallbackQuery('❌ Произошла ошибка').catch(() => {});
+            console.error('Ошибка в lessonMaterialsController::handleCallbackQuery:', error);
+            await ctx.answerCallbackQuery('❌ Произошла ошибка');
         }
     }
 
     static async showLessonMaterials(ctx, lessonId) {
         try {
             const materials = await lessonService.getLessonMaterialsByLessonId(lessonId);
-
+            const keyboard = new InlineKeyboard();
             if (!materials || materials.length === 0) {
-                await ctx.reply('📚 В этом уроке пока нет обучающих материалов.');
+                await ctx.answerCallbackQuery('В этом уроке пока нет обучающих материалов.');
                 return;
             }
 
-            const sortedMaterials = materials.sort((a, b) => a.order - b.order);
-            const keyboard = new InlineKeyboard();
-
-            sortedMaterials.forEach((material) => {
-                const safeTitle = material.title.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
-                keyboard.text(safeTitle, `view_material:${material.id}`).row();
+            let message = `Обучающие материалы урока:`;
+            materials.forEach((material) => {
+                keyboard.text(material.title, `view_material:${material.id}`).row();
             });
             keyboard.text('🔙 К уроку', `view_lesson:${lessonId}`).row();
 
-            const message = '📚 Обучающие материалы урока:';
-
-            await this.safeSendText(ctx, message, keyboard, 'Markdown');
-
+            await LessonMaterialController.updateMessage(ctx, message, keyboard, null, 'Markdown');
+            await ctx.answerCallbackQuery();
         } catch (error) {
-            console.error('❌ Error in showLessonMaterials:', error?.message || error);
-            await ctx.reply('❌ Ошибка при загрузке списка материалов.');
+            console.error('Error showing lesson materials:', error);
+            await ctx.reply('❌ Произошла ошибка при загрузке материалов урока.');
         }
-    }
-
-    static async prepareMarkdownText(title, content) {
-        // 1. Очищаем content от HTML-тегов и сущностей
-        const rawContent = content
-            ? content.replace(/<[^>]*>/g, '')           // удаляем теги
-                .replace(/&nbsp;/g, ' ')                 // заменяем &nbsp;
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .trim()
-            : 'Описание отсутствует';
-
-        // 2. Экранируем ТОЛЬКО необходимые символы для legacy Markdown
-        const escapeMarkdown = (text) => text.replace(/([_*`[\]])/g, '\\$1');
-
-        const safeTitle = escapeMarkdown(title);
-        const safeContent = escapeMarkdown(rawContent);
-
-        // 3. Формируем финальное сообщение
-        return `*${safeTitle}*\n\n${safeContent}`;
     }
 
     static async showLessonMaterial(ctx, materialId) {
         try {
             const material = await lessonService.getByIdWithFiles(materialId);
             if (!material) {
-                await ctx.answerCallbackQuery("❌ Материал не найден");
+                await ctx.answerCallbackQuery("Материал не найден");
                 return;
             }
 
-            // 🔥 Подготовка текста для Markdown (legacy)
-            const message = await this.prepareMarkdownText(material.title, material.content);
+            // Основной текст
+            let message = `*${material.title}*\n\n${material.content || 'Описание отсутствует'}`;
 
+            // Клавиатура
             const lessonId = material.lessonId;
             const keyboard = KeyboardFactory.createLessonMaterialNavigationKeyboard(lessonId);
 
-            const files = material.files || [];
-            const imageFile = files.find(f => f.mime_type?.toLowerCase()?.startsWith('image/'));
-            console.log(files)
+            // Получаем файлы (полиморфные)
+            let files = [];
+            if (Array.isArray(material.files)) files = material.files;
+            else if (material.file) files = [material.file];
+            else if (material.File) files = [material.File];
+
+            // Ищем изображение
+            const imageFile = files.find(f => {
+                if (f.mime_type && f.mime_type.startsWith('image/')) return true;
+                const ext = f.extension ? f.extension.toLowerCase() : '';
+                return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+            });
+
+            // Ищем видеофайл
+            const videoFile = files.find(f => {
+                if (f.mime_type && f.mime_type.startsWith('video/')) return true;
+                const ext = f.extension ? f.extension.toLowerCase() : '';
+                return ['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext);
+            });
+
+            // Готовим URL для файлов (заглушка для теста, реальный URL строится по хранилищу)
+            const buildStorageUrl = (file) => {
+                // Используйте реальный BASE_STORAGE_URL
+                const BASE_STORAGE_URL = process.env.FILE_STORAGE_URL || 'https://edubot.fun';
+                const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
+                return `${BASE_STORAGE_URL}/storage/${encodedPath}`;
+            };
+
+            let mediaType = null;
+            let mediaUrl = null;
+
             if (imageFile) {
-                const filePath = imageFile.path;
-                const storagePath = path.join(__dirname, '..', '..');
-                logger.info(storagePath);
-
-                const fullPath = path.join(storagePath, filePath);
-
-                try {
-                    await fs.access(fullPath);
-
-                    await ctx.editMessageMedia(
-                        {
-                            type: 'photo',
-                            media: new InputFile(fullPath),
-                            caption: message,
-                            parse_mode: 'Markdown'  // ✅ legacy Markdown
-                        },
-                        { reply_markup: keyboard }
-                    );
-                } catch (err) {
-                    console.warn('⚠️ File not found, fallback to text:', err.message);
-                    await this.safeSendText(ctx, message, keyboard, 'Markdown');
-                }
-            } else {
-                await this.safeSendText(ctx, message, keyboard, 'Markdown');
+                mediaType = 'photo';
+                //mediaUrl = buildStorageUrl(imageFile);
+                mediaUrl = 'https://main-cdn.sbermegamarket.ru/big2/hlr-system/-10/971/421/202/251/32/100048530701b1.jpg';
+            } else if (videoFile) {
+                mediaType = 'video';
+                //mediaUrl = buildStorageUrl(videoFile);
+                mediaUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+            } else if (material.video_url) {
+                message += `\n\n📹 [Смотреть видео](${material.video_url})`;
             }
 
+            await LessonMaterialController.updateMessage(ctx, message, keyboard, { type: mediaType, url: mediaUrl }, 'Markdown');
+            await ctx.answerCallbackQuery();
         } catch (error) {
-            console.error('❌ Error in showLessonMaterial:', error?.message || error);
-            await ctx.answerCallbackQuery('❌ Ошибка при загрузке материала').catch(() => {});
+            console.error('Error showing lesson material:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при загрузке материала');
         }
     }
 
     static async backToMaterials(ctx, lessonId) {
         try {
+            const lesson = await lessonService.getLessonById(lessonId);
+            if (!lesson) {
+                await ctx.answerCallbackQuery('❌ Урок не найден');
+                return;
+            }
             await LessonMaterialController.showLessonMaterials(ctx, lessonId);
         } catch (error) {
-            console.error('❌ Error in backToMaterials:', error?.message || error);
-            await ctx.answerCallbackQuery('❌ Ошибка при возврате').catch(() => {});
+            console.error('Ошибка в backToMaterials:', error);
+            await ctx.answerCallbackQuery('❌ Ошибка при возврате к модулям');
+        }
+    }
+
+    /**
+     * УНИВЕРСАЛЬНЫЙ МЕТОД ОБНОВЛЕНИЯ СООБЩЕНИЯ
+     * Поддерживает текст, фото и видео.
+     * @param {Context} ctx - контекст grammy
+     * @param {string} text - текст / подпись
+     * @param {InlineKeyboard} keyboard - клавиатура
+     * @param {Object|null} media - { type: 'photo'|'video', url: string } или строка (для обратной совместимости)
+     * @param {string} parseMode - режим парсинга
+     */
+    static async updateMessage(ctx, text, keyboard, media = null, parseMode = 'Markdown') {
+        // Нормализуем параметр media
+        let mediaType = null;
+        let mediaUrl = null;
+
+        if (typeof media === 'object' && media !== null) {
+            mediaType = media.type;
+            mediaUrl = media.url;
+        } else if (typeof media === 'string' && media.length > 0) {
+            // старый формат: строка = картинка
+            mediaType = 'photo';
+            mediaUrl = media;
+        }
+
+        const currentMsg = ctx.callbackQuery?.message;
+        const isCurrentMedia = !!(currentMsg?.photo || currentMsg?.video || currentMsg?.document || currentMsg?.animation);
+        const isNextMedia = !!mediaUrl;
+
+        // Если тип сообщения меняется (текст ↔ медиа) или меняется тип медиа (фото ↔ видео)
+        if ((isCurrentMedia !== isNextMedia) ||
+            (isCurrentMedia && isNextMedia &&
+                ((currentMsg.photo && mediaType !== 'photo') || (currentMsg.video && mediaType !== 'video')))) {
+            try {
+                await ctx.deleteMessage();
+            } catch (e) {
+                console.warn('Не удалось удалить сообщение:', e.description || e.message);
+            }
+
+            if (isNextMedia) {
+                if (mediaType === 'photo') {
+                    await ctx.replyWithPhoto(mediaUrl, {
+                        caption: text,
+                        parse_mode: parseMode,
+                        reply_markup: keyboard
+                    });
+                } else if (mediaType === 'video') {
+                    await ctx.replyWithVideo(mediaUrl, {
+                        caption: text,
+                        parse_mode: parseMode,
+                        reply_markup: keyboard
+                    });
+                }
+            } else {
+                await ctx.reply(text, {
+                    parse_mode: parseMode,
+                    reply_markup: keyboard
+                });
+            }
+        } else {
+            // Тип не изменился – редактируем существующее
+            if (isNextMedia) {
+                if (mediaType === 'photo') {
+                    await ctx.editMessageMedia({
+                        type: 'photo',
+                        media: mediaUrl,
+                        caption: text,
+                        parse_mode: parseMode
+                    }, { reply_markup: keyboard });
+                } else if (mediaType === 'video') {
+                    await ctx.editMessageMedia({
+                        type: 'video',
+                        media: mediaUrl,
+                        caption: text,
+                        parse_mode: parseMode
+                    }, { reply_markup: keyboard });
+                }
+            } else {
+                await ctx.editMessageText(text, {
+                    parse_mode: parseMode,
+                    reply_markup: keyboard
+                });
+            }
         }
     }
 }

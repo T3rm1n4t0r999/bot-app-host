@@ -30,7 +30,15 @@ const Module = sequelize.define('Module', {
     organization_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    }
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
 }, {
     tableName: 'modules',
     underscored: true,

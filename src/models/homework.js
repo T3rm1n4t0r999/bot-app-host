@@ -20,13 +20,21 @@ const Homework = sequelize.define('Homework', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
-    taskId: {
+    maxAttempts: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    lessonId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'lessonTask',
+            model: 'lesson',
             key: 'id'
         }
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     },
     organization_id: {
         type: DataTypes.INTEGER,

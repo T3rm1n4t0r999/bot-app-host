@@ -1,7 +1,8 @@
 const {sequelize} = require('../database/db');
 const {DataTypes} = require('sequelize');
 
-const Course = sequelize.define('Course', {
+
+const Exam = sequelize.define('Exam', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -18,11 +19,23 @@ const Course = sequelize.define('Course', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    organization_id: {
+    moduleId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: 'modules',
+            key: 'id'
+        }
     },
-    order: {
+    maxScore: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    maxAttempts: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    organization_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
@@ -30,14 +43,15 @@ const Course = sequelize.define('Course', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    auto_assign: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
+    timeLimit: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     }
 }, {
+    tableName: 'exams',
     underscored: true,
     timestamps: true
 });
 
 
-module.exports = Course;
+module.exports = Exam;

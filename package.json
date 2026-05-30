@@ -1,7 +1,7 @@
 {
   "name": "bot-app-nodejs",
   "version": "1.0.0",
-  "main": "src/index_webhook.js",
+  "main": "src/index_polling.js",
   "scripts": {
     "dev": "nodemon src/index_polling.js",
     "seed": "node src/scripts/seed.js",

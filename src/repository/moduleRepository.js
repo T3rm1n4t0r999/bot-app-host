@@ -17,9 +17,9 @@ class ModuleRepository extends BaseRepository {
     async findByCourseId(courseId, options = {}) {
         try {
             return await this.findByCondition(
-                { courseId },
+                { courseId, is_active: true },
                 {
-                    order: [['id', 'ASC']],
+                    order: [['order', 'ASC']],
                     ...options
                 }
             );

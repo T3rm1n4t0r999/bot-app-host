@@ -29,7 +29,6 @@ function requireRegistration() {
             ctx.state.student = student;
 
             await next();
-
         } catch (error) {
             logger.error('Error in middleware.requireRegistration', error);
             await errorHandler(ctx, error);

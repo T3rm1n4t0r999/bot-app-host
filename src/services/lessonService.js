@@ -1,12 +1,24 @@
 const LessonRepository = require('../repository/lessonRepository');
 const LessonMaterialRepository = require('../repository/lessonMaterialRepository');
 const LessonTaskRepository = require("../repository/lessonTaskRepository");
+const StudentProgressRepository = require("../repository/studentProgressRepository");
+const HomeworkRepository = require("../repository/homeworkRepository");
 
 class LessonService {
     constructor() {
         this.lessonRepository = new LessonRepository();
         this.lessonMaterialRepository = new LessonMaterialRepository();
         this.lessonTaskRepository = new LessonTaskRepository();
+
+    }
+
+
+
+    async getTaskContext(entityType, entityId){
+        if (entityType === 'lesson_task') {
+            return await this.lessonTaskRepository.getContextById(entityId);
+        }
+        return { lessonId: null, moduleId: null };
     }
 
     /**
@@ -60,9 +72,18 @@ class LessonService {
         }
     }
 
-    async getLessonTask(lessonId){
+    async getLessonTasksByLessonId(lessonId) {
         try {
             return await this.lessonTaskRepository.findByLessonId(lessonId);
+        } catch (error) {
+            console.error('Error getting lesson tasks by lesson ID:', error);
+            throw new Error(`Failed to get lesson tasks: ${error.message}`);
+        }
+    }
+
+    async getLessonTask(taskId){
+        try {
+            return await this.lessonTaskRepository.findById(taskId);
         } catch (e) {
             console.error('Error getting task by lesson ID:', error);
             throw new Error(`Failed to get task: ${e.message}`);

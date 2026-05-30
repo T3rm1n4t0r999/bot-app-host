@@ -17,9 +17,9 @@ class LessonMaterialRepository extends BaseRepository {
     async findByLessonId(lessonId) {
         try {
             return await this.findByCondition(
-                { lessonId },
+                { lessonId, is_active: true },
                 {
-                    order: [['order', 'ASC'], ['id', 'ASC']]
+                    order: [['order', 'ASC']],
                 }
             );
 
@@ -36,13 +36,13 @@ class LessonMaterialRepository extends BaseRepository {
      */
     async findByIdWithFiles(materialId) {
         try {
-            return await this.findById(materialId,
-                {
-                    include: [{
-                        model: File,
-                        as: 'files'
-                    }]
-                });
+            return await this.findById(materialId, {
+                include: [{
+                    model: File,
+                    as: 'files',
+                    required: false
+                }]
+            });
         } catch (error) {
             console.error('Error finding material with files:', error);
             throw error;

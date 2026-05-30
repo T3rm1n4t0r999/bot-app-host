@@ -1,9 +1,34 @@
 const QuestionRepository = require("../repository/questionRepository");
 const Logger = require("../logger/logger");
 const logger = require("../logger/logger");
+const {use} = require("express/lib/application");
+const {resolveModelType} = require("../utils/modelResolver");
 class QuestionService {
     constructor(){
         this.questionRepo = new QuestionRepository();
+    }
+
+    async getQuestionByIdWithFiles(questionId) {
+        try {
+            return await this.questionRepo.findByIdWithFiles(questionId);
+        } catch (e) {
+            Logger.error(e);
+            throw e;
+        }
+    }
+
+
+    async getMaxScore(entityType, entityId) {
+        try {
+            const Model = resolveModelType(entityType); // возвращает модель: Homework, Exam, LessonTask
+            const entity = await Model.findByPk(entityId, {
+                attributes: ['maxScore']
+            });
+            return entity ? entity.maxScore : 0;
+        } catch (e) {
+            Logger.error(e);
+            return 0;
+        }
     }
 
     /**
@@ -88,8 +113,8 @@ class QuestionService {
         if (!question || userAnswer === null || userAnswer === undefined) {
             return false;
         }
-
-        const correctAnswers = await this.normalizeCorrectAnswers(question.correctAnswers);
+        const questionTextAnswers = question.options;
+        const correctAnswers = question.correctAnswers;
 
         switch (question.questionType) {
             case 'single_choice':
@@ -99,34 +124,13 @@ class QuestionService {
                 return await this.checkMultipleChoice(userAnswer, correctAnswers);
 
             case 'text':
-                return await this.checkTextAnswer(userAnswer, correctAnswers);
-
+                return await this.checkTextAnswer(userAnswer, questionTextAnswers);
+            case 'free_text':
+                return false;
             default:
                 Logger.warn(`Unknown question type: ${question.questionType}`);
                 return false;
         }
-    }
-
-    /**
-     * Нормализация correctAnswers к единому формату
-     */
-    async normalizeCorrectAnswers(correctAnswers) {
-        if (!correctAnswers) return [];
-
-        if (Array.isArray(correctAnswers)) {
-            return correctAnswers;
-        }
-
-        if (typeof correctAnswers === 'string') {
-            try {
-                const parsed = JSON.parse(correctAnswers);
-                return Array.isArray(parsed) ? parsed : [parsed];
-            } catch (error) {
-                return [correctAnswers];
-            }
-        }
-
-        return [correctAnswers];
     }
 
     /**
@@ -150,26 +154,17 @@ class QuestionService {
             return false;
         }
 
-        // Нормализуем userAnswer к массиву
-        const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
+        return await this.areArraysEqual(correctAnswers, userAnswer);
+    }
 
-        // Для multiple_choice важен порядок и точное совпадение
-        const normalizedUserAnswers = userAnswers
-            .map(answer => answer.toString().trim())
-            .sort();
+    async areArraysEqual(arr1, arr2) {
+        if (!Array.isArray(arr1) || !Array.isArray(arr2)) return false;
+        if (arr1.length !== arr2.length) return false;
 
-        const normalizedCorrectAnswers = correctAnswers
-            .map(answer => answer.toString().trim())
-            .sort();
+        const a = arr1.map(String).sort();
+        const b = arr2.map(String).sort();
 
-        // Проверяем точное совпадение массивов
-        if (normalizedUserAnswers.length !== normalizedCorrectAnswers.length) {
-            return false;
-        }
-
-        return normalizedUserAnswers.every((answer, index) =>
-            answer === normalizedCorrectAnswers[index]
-        );
+        return a.every((val, idx) => val === b[idx]);
     }
 
     /**
@@ -177,18 +172,22 @@ class QuestionService {
      */
     async checkTextAnswer(userAnswer, correctAnswers) {
         if (!userAnswer || correctAnswers.length === 0) return false;
-
         const userAnswerStr = userAnswer.toString().trim().toLowerCase();
 
         return correctAnswers.some(correct => {
-            const correctStr = correct.toString().trim().toLowerCase();
 
-            // Точное совпадение
+            let correctStr;
+            if (correct && typeof correct.text === 'string') {
+                correctStr = correct.text;
+            }
+
+            correctStr = correctStr.trim().toLowerCase();
+
             if (userAnswerStr === correctStr) {
                 return true;
             }
 
-            // Совпадение без лишних пробелов
+
             const normalizedUser = userAnswerStr.replace(/\s+/g, ' ');
             const normalizedCorrect = correctStr.replace(/\s+/g, ' ');
             return normalizedUser === normalizedCorrect;

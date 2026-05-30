@@ -3,7 +3,8 @@ const KeyboardFactory = require("../services/keyboardFactory");
 const logger = require("../logger/logger");
 const homeworkService = new HomeworkService();
 const RedisService = require("../services/redisService");
-
+const StudentService = require("../services/studentService");
+const studentService = new StudentService();
 const entityType = RedisService.ENTITY_TYPES.Homework;
 
 class HomeworkController {
@@ -38,25 +39,69 @@ class HomeworkController {
      */
     static async showHomeworks(ctx, page = 1) {
         try {
-            const studentId = ctx.state?.student?.id;
-            const homeworks = await homeworkService.getStudentHomeworks(studentId);
-            if(!homeworks || homeworks.length === 0){
-                if(ctx.callbackQuery){
-                    await ctx.answerCallbackQuery('У вас пока нет домашних заданий.\\nРешите урок, чтобы получить домашнее задание.')
-                    return;
+            const student = ctx.state?.student;
+            if (!student) {
+                const msg = '❌ Ошибка: не удалось определить студента.';
+                return ctx.callbackQuery ? ctx.answerCallbackQuery(msg) : ctx.reply(msg);
+            }
+
+            const homeworks = await homeworkService.getStudentHomeworks(student);
+
+            if (!homeworks || homeworks.length === 0) {
+                const msg = 'У вас пока нет домашних заданий.\nРешите урок, чтобы получить домашнее задание.';
+                if (ctx.callbackQuery) {
+                    await ctx.answerCallbackQuery(msg, { show_alert: true });
+                    // Опционально: можно отредактировать сообщение, чтобы показать текст
+                    await ctx.editMessageText(msg);
+                } else {
+                    await ctx.reply(msg);
                 }
-                return ctx.reply('У вас пока нет домашних заданий.\nРешите урок, чтобы получить домашнее задание.')
+                return;
             }
-            const message = 'Выберите домашнее задание:';
+
+            const message = '*Выберите домашнее задание:*';
             const keyboard = KeyboardFactory.createHomeworksKeyboard(homeworks, page);
-            if(ctx.callbackQuery){
-                await ctx.editMessageText(message, {reply_markup:keyboard});
+
+            const options = {
+                reply_markup: keyboard,
+                parse_mode: 'Markdown'
+            };
+
+            if (ctx.callbackQuery) {
+                // Используем универсальный подход или editMessageText, если уверены, что предыдущее сообщение было текстовым
+                await ctx.editMessageText(message, options);
                 await ctx.answerCallbackQuery();
+            } else {
+                await ctx.reply(message, options);
             }
-            else await ctx.reply(message, {reply_markup:keyboard});
-        }catch (error) {
-            logger.error('Error while getting homeworks', error);
+        } catch (error) {
+            logger.error('Error while getting homeworks', { error: error.message });
+
+            const errorMsg = '❌ Произошла ошибка при загрузке домашних заданий.';
+            if (ctx.callbackQuery) {
+                await ctx.answerCallbackQuery(errorMsg, { show_alert: true }).catch(() => {});
+            } else {
+                await ctx.reply(errorMsg).catch(() => {});
+            }
         }
+    }
+
+    static async updateMessage(ctx, text, keyboard) {
+        const currentMsg = ctx.callbackQuery?.message;
+        const isCurrentPhoto = !!currentMsg?.photo;
+
+        if (isCurrentPhoto) {
+            try {
+                await ctx.deleteMessage();
+            } catch (e) {
+
+            }
+        }
+
+        await ctx.reply(text, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+        });
     }
 
     /**
@@ -69,15 +114,24 @@ class HomeworkController {
                 await ctx.answerCallbackQuery('Домашнее задание отсутсвует');
                 return;
             }
-            const message = 'Домашнее задание:\n\n'+
-                `📖 *Название*: ${homework.title}\n`+
-                `🏆 *Максимально баллов*: ${homework.maxScore}\n`;
+            const lastAttempt = await studentService.findLastResult(student?.id,'homework', homeworkId);
+            const bestAttempt = await studentService.findBestResult(student?.id,'homework', homeworkId);
 
+            let message = '';
+            if (lastAttempt){
+                const homeworkAttemptMessage = homework.maxAttempts < 1 ? lastAttempt : `${lastAttempt} / ${homework.maxAttempts}`;
+                message = 'Домашнее задание:\n\n'+
+                    `📖 *Название*: ${homework.title}\n`+
+                    `🏆 *Баллы*: ${bestAttempt} / ${homework.maxScore}\n`+
+                `*Попыток*: ${homeworkAttemptMessage}`;
+            }else{
+                message = 'Домашнее задание:\n\n'+
+                    `📖 *Название*: ${homework.title}\n`+
+                    `🏆 *Максимально баллов*: ${homework.maxScore}\n`+
+                `*Максимально попыток*: ${homework.maxAttempts < 1 ? 'Не ограничено' : homework.maxAttempts}`;
+            }
             const keyboard = KeyboardFactory.createHomeworkTaskKeyboard(homeworkId, 'homework');
-            await ctx.editMessageText(message, {
-                reply_markup:keyboard,
-                parse_mode: 'Markdown'
-            });
+            await this.updateMessage(ctx, message, keyboard);
             await ctx.answerCallbackQuery();
         } catch (e) {
             logger.error('Error while showing homework ', e);

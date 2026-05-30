@@ -12,11 +12,11 @@ const StudentProgress = sequelize.define('StudentProgress', {
         type: DataTypes.JSONB,
         allowNull: true
     },
-    attachedFiles: {
-        type: DataTypes.JSONB,
+    points: {
+        type: DataTypes.INTEGER,
         allowNull: true
     },
-    points: {
+    maxPoints: {
         type: DataTypes.INTEGER,
         allowNull: true
     },
@@ -34,7 +34,7 @@ const StudentProgress = sequelize.define('StudentProgress', {
         comment: 'ID сущности (LessonTask, Homework, Training, etc.)'
     },
     progressableType: {
-        type: DataTypes.ENUM('lesson_task', 'homework', 'training', 'quiz'),
+        type: DataTypes.ENUM('lesson_task', 'homework', 'exam'),
         allowNull: false,
         comment: 'Тип сущности'
     },
@@ -43,9 +43,29 @@ const StudentProgress = sequelize.define('StudentProgress', {
         allowNull: false,
         defaultValue: '1'
     },
+    organizationId:{
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    checked:{
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    checkedBy:{
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+    },
+    finishedByTimeout:{
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+    },
+    metadata: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+    },
 }, {
     tableName: 'student_progress',
-    timestamps: false,
+    timestamps: true,
     underscored: true,
     indexes: [
         // Уникальный индекс для предотвращения дублирования попыток

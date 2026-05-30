@@ -38,13 +38,13 @@ class CourseController {
 
             if (courses.length === 0) {
                 if(ctx.callbackQuery) {
-                    await ctx.answerCallbackQuery('📚 На данный момент курсы отсутствуют.');
+                    await ctx.answerCallbackQuery('У вас нет доступных курсов.');
                     return
                 }
-                return ctx.reply('📚 На данный момент курсы отсутствуют.');
+                return ctx.reply('У вас нет доступных курсов.');
             }
 
-            const message = '📚 Выберите курс:';
+            const message = 'Ваши курсы:';
             const keyboard = KeyboardFactory.createCoursesKeyboard(courses, page);
             if(ctx.callbackQuery) {
                 await ctx.editMessageText(message, {reply_markup: keyboard});
@@ -53,7 +53,12 @@ class CourseController {
             else await ctx.reply(message, { reply_markup: keyboard });
         } catch (error) {
             console.error('Ошибка в showCourses:', error);
-            await ctx.answerCallbackQuery('❌ Произошла ошибка при загрузке курсов.');
+            // ИСПРАВЛЕНО: Безопасный ответ об ошибке
+            if (ctx.callbackQuery) {
+                await ctx.answerCallbackQuery('❌ Ошибка при загрузке курсов');
+            } else {
+                await ctx.reply('❌ Произошла ошибка при загрузке курсов.');
+            }
         }
     }
 }

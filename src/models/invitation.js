@@ -61,6 +61,10 @@ const Invitation = sequelize.define('Invitation', {
     expires_at: {
         type: DataTypes.DATE,
         allowNull: true
+    },
+    group_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 }, {
     tableName: 'invitations',

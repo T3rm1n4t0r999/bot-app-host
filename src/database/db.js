@@ -15,19 +15,7 @@ const sequelize = new Sequelize(
     }
 );
 
-// Функция для проверки подключения
-async function testConnection() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Database connected successfully');
-        return true;
-    } catch (error) {
-        console.error('❌ Unable to connect to database:', error.message);
-        return false;
-    }
-}
-
 module.exports = {
     sequelize,
-    testConnection
+
 };

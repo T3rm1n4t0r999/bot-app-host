@@ -12,6 +12,7 @@ const LessonTaskController = require("../controllers/lessonTaskController");
 const HomeworkController = require("../controllers/homeworkController");
 const QuestionController = require("../controllers/questionController");
 const TrainerController = require("../controllers/trainerController");
+const ExamController = require("../controllers/examController");
 const router = new Composer();
 
 // Обработка callback queries для курсов
@@ -37,7 +38,8 @@ router.callbackQuery(/back_to_materials:\d+/, requireRegistration(), requireStud
 // Обработка callback queries для заданий урока
 router.callbackQuery(/back_to_lesson:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 router.callbackQuery(/back_to_task:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
-router.callbackQuery(/view_lesson_task:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
+router.callbackQuery(/view_tasks:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
+router.callbackQuery(/view_task:\d+/, requireRegistration(), requireStudentRole(), LessonTaskController.handleCallbackQuery);
 
 
 // Обработка callback queries для кнопок внутри вопросов
@@ -59,29 +61,51 @@ router.callbackQuery('back_to_homework', requireRegistration(), requireStudentRo
 router.callbackQuery(/trainers_page:\d+/, requireRegistration(), requireStudentRole(), TrainerController.handleCallbackQuery);
 router.callbackQuery('back_to_trainer', requireRegistration(), requireStudentRole(), TrainerController.handleCallbackQuery);
 
+// Обработка callback queries для контрольных работ
+router.callbackQuery(/view_exam:\d+/, requireRegistration(), requireStudentRole(),ExamController.handleCallbackQuery);
+router.callbackQuery('back_to_exam', requireRegistration(), requireStudentRole(), ExamController.handleCallbackQuery);
+
 
 // Служебная кнопка-индикатор страницы
 router.callbackQuery('page_info_course', requireRegistration(), requireStudentRole(), CourseController.handleCallbackQuery);
 router.callbackQuery('page_info_module', requireRegistration(), requireStudentRole(), ModuleController.handleCallbackQuery);
+
+// Обработка callback queries результатов
+router.callbackQuery('show_results_menu', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery('show_all_results', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery('show_checked_results', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery('show_unchecked_results', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery(/results_page:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery(/show_result:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery)
 
 // Команды бота
 
 // Обработка команды /start
 router.command('start', StudentController.handleStart);
 router.command('token', StudentController.acceptInvitation);
+router.command('join', requireRegistration(), StudentController.joinGroup);
 
 // Обработка команд показа профиля
 router.command('profile', requireRegistration(), requireHandledAnswer(), StudentController.showStudentInfo);
-router.hears('👤 Мой профиль', requireRegistration(), requireHandledAnswer(), StudentController.showStudentInfo);
+router.hears('Мой профиль', requireRegistration(), requireHandledAnswer(), StudentController.showStudentInfo);
 router.callbackQuery('show_student_profile', requireRegistration(), requireHandledAnswer(), StudentController.showStudentInfo);
 router.callbackQuery('show_leaderboard', requireRegistration(), requireHandledAnswer(), StudentController.showLeaderboard);
+
 // Обработка команд показа курса
 router.command('course', requireRegistration(), requireStudentRole(), requireHandledAnswer(), (ctx) => CourseController.showCourses(ctx, 1));
-router.hears('📚 Курсы', requireRegistration(), requireStudentRole(), requireHandledAnswer(), (ctx) => CourseController.showCourses(ctx, 1));
+router.hears('Курсы', requireRegistration(), requireStudentRole(), requireHandledAnswer(), (ctx) => CourseController.showCourses(ctx, 1));
 
 // Обработка команд показа домашних заданий
 router.command('homework',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
-router.hears('📝 Домашние задания', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
+router.hears('Домашние задания', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => HomeworkController.showHomeworks(ctx, 1));
+
+// Обработка команд показа домашних заданий
+router.command('exam',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => ExamController.showExams(ctx, 1));
+router.hears('Контрольные работы', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => ExamController.showExams(ctx, 1));
+
+router.command('results',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => StudentController.showResultsMenu(ctx));
+router.hears('Результаты', requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => StudentController.showResultsMenu(ctx));
+
 
 // Обработка команд показа тренажёра
 router.command('trainer',requireRegistration(), requireStudentRole(),  requireHandledAnswer(), (ctx) => TrainerController.showTrainers(ctx, 1));

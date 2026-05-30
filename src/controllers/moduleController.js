@@ -40,11 +40,11 @@ class ModuleController {
 
             if (modules.length === 0) {
                 const keyboard = new InlineKeyboard().text('🔙 К курсам', `back_to_courses`);
-                await ctx.editMessageText('📚 В данном курсе модули отсутствуют.', {reply_markup: keyboard});
+                await ctx.editMessageText('В данном курсе модули отсутствуют.', {reply_markup: keyboard});
                 return;
             }
 
-            const message = '📚 Модули курса:';
+            const message = 'Модули курса:';
             const keyboard = KeyboardFactory.createModulesKeyboard(modules, courseId, page);
 
             await ctx.editMessageText(message, {reply_markup: keyboard});

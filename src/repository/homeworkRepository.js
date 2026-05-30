@@ -2,68 +2,64 @@ const BaseRepository = require("./baseRepository");
 const StudentHomework = require("../models/studentHomework");
 const Homework = require("../models/homework");
 const logger = require("../logger/logger");
-const {sequelize} = require("../models");
+const {sequelize, StudentCourse} = require("../models");
 class HomeworkRepository extends BaseRepository {
     constructor() {
         super(Homework);
     }
 
+
+    async getActiveByLesson(lessonId) {
+        return await this.model.findOne({
+            where: { lesson_id: lessonId, is_active: true }
+        });
+    }
+
+
+    /**
+     * Назначить домашнее задание студенту (создать запись, если её нет)
+     * @param {object} data - { studentId, homeworkId, organizationId, grantedBy, grantedAt }
+     * @returns {Promise<[object, boolean]>}
+     */
+    async assignToStudent(data) {
+        return await StudentHomework.findOrCreate({
+            where: {
+                studentId: data.studentId,       // camelCase
+                homeworkId: data.homeworkId
+            },
+            defaults: {
+                organizationId: data.organizationId,  // camelCase
+                grantedBy: data.grantedBy || 'auto',
+                grantedAt: data.grantedAt || new Date()
+            }
+        });
+    }
+
     /**
      * Получает все homework для студента через studentHomework
-     * @param {number} studentId - ID студента
+     * @param {number} student - студент
+     * @param options
      * @returns {Promise<Array<Homework>>} - Массив homework
      */
-    async getStudentHomeworks(studentId) {
+    async getStudentHomeworks(student, options = {}) {
         try {
-            return await this.findAll({
+            return await this.model.findAll({
                 include: [{
                     model: StudentHomework,
-                    as: 'studentSubmissions',
-                    where: { studentId: studentId },
-                    required: true
-                }]
-            });
-        } catch (e) {
-            logger.error("Error getting student homeworks", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Получает homework по taskId для студента
-     * @param {number} taskId - ID задания
-     * @returns {Promise<Homework|null>} - Homework или null
-     */
-    async getHomeworkByTaskId( taskId) {
-        try {
-            return await this.findOne({where: {
-                taskId: taskId
-                }
-            });
-        } catch (e) {
-            logger.error("Error finding homework by taskId: ", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Добавить домашнее задание студенту
-     * @param studentId
-     * @param homeworkId
-     * @param options
-     * @returns {Promise<[Model<any, TModelAttributes>, boolean]>}
-     */
-    async addHomeworkToStudent(studentId, homeworkId, options = {}) {
-        try {
-            return await StudentHomework.findOrCreate({
+                    as: 'studentHomeworks',
+                    where: {
+                        studentId: student.id // ИСПРАВЛЕНО: student_id -> studentId (имя атрибута в модели)
+                    },
+                    required: true // INNER JOIN
+                }],
                 where: {
-                    studentId: studentId,
-                    homeworkId: homeworkId,
+                    is_active: true
                 },
+                order: [['id', 'DESC']],
                 ...options
             });
-        } catch (error) {
-            logger.error('Error assigning homework:', error);
+        } catch(error) {
+            console.error('Error in getStudentHomework:', error);
             throw error;
         }
     }
