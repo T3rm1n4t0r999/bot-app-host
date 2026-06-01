@@ -5,6 +5,7 @@ const keyboardFactory = require("../services/keyboardFactory");
 const logger = require('../logger/logger');
 const InvitationService = require("../services/invitationService");
 const {NotFoundError} = require("../utils/errors");
+const {InlineKeyboard} = require("grammy");
 // Создаем экземпляр сервиса
 const studentService = new StudentService();
 const invitationService = new InvitationService();
@@ -28,8 +29,15 @@ class StudentController {
             const page = parseInt(parts[2]) || 1;
             await StudentController.showResultsByFilter(ctx, filterType, page);
         } else if (callbackData.startsWith('show_result:')) {
-            const attemptId = parseInt(callbackData.split(':')[1]);
-            await StudentController.showCheckedResult(ctx, attemptId);
+            const parts = callbackData.split(':');
+            const attemptId = parseInt(parts[1]);
+            const questionIndex = parts.length > 2 ? parseInt(parts[2]) : 0;
+            await StudentController.showResultQuestion(ctx, attemptId, questionIndex);
+        } else if (callbackData.startsWith('result_question:')) {
+            const parts = callbackData.split(':');
+            const attemptId = parseInt(parts[1]);
+            const questionIndex = parseInt(parts[2]);
+            await StudentController.showResultQuestion(ctx, attemptId, questionIndex);
         }
 
     }
@@ -164,10 +172,14 @@ class StudentController {
             const telegramId =ctx?.from?.id.toString();
             const isRegistered = await studentService.isUserRegistered(telegramId);
             if (!isRegistered) {
-                await ctx.reply('Добро пожаловать! Пришлите сюда код верификации отправленный вам на почту\n' +
-                    'Пример: /token ваш_код')
-            }else{
-                await ctx.reply('Вы уже автозировались!');
+                    const student = await StudentController.handleInvitations(ctx)
+                    const keyboard = keyboardFactory.createMainMenuKeyboard();
+                    if (student) {
+                        await ctx.reply(
+                            '✅ Добро пожаловать! Выберите действие:',
+                            { reply_markup: keyboard }
+                        );
+                    }
             }
         } catch (error) {
             logger.error('Error in StudentController.handleStart', error);
@@ -175,44 +187,47 @@ class StudentController {
         }
     }
 
+    static async handleInvitations(ctx){
+        const commandText = ctx.message.text;
+        const token = commandText.split(' ')[1];
+
+        if (!token) {
+            await ctx.reply('Пожалуйста, укажите токен.\n' +
+                'Пример: /token ваш_код');
+            return;
+        }
+        const botUsername = '@' + ctx.me.username;
+        const invitation = await invitationService.verifyStudentInvitation(token, botUsername);
+
+        if (!invitation) {
+            await ctx.reply(
+                'Токен организации неверный или не существует.'
+            )
+            return;
+        }
+        const orgId = invitation?.organization_id;
+        const student = await studentService.registerStudent(ctx.from, orgId);
+        await studentService.assignAutoCourses(student);
+        if (invitation?.group_id) {
+            await studentService.assignGroupById(student, invitation?.group_id);
+        }
+        return student;
+    }
+
     static async acceptInvitation(ctx){
         try{
             const telegramId =ctx?.from?.id.toString();
             const isRegistered = await studentService.isUserRegistered(telegramId);
-            if (isRegistered) {
-                await ctx.reply('Вы уже автозировались!');
-                return;
+            if (!isRegistered) {
+                const student = await StudentController.handleInvitations(ctx)
+                const keyboard = keyboardFactory.createMainMenuKeyboard();
+                if (student) {
+                    await ctx.reply(
+                        '✅ Добро пожаловать! Выберите действие:',
+                        { reply_markup: keyboard }
+                    );
+                }
             }
-            const commandText = ctx.message.text;
-
-            const token = commandText.split(' ')[1];
-
-            if (!token) {
-                await ctx.reply('Пожалуйста, укажите токен.\n' +
-                    'Пример: /token ваш_код');
-                return;
-            }
-            const botUsername = '@' + ctx.me.username;
-            const invitation = await invitationService.verifyStudentInvitation(token, botUsername);
-
-            if (!invitation) {
-                await ctx.reply(
-                    'Токен организации неверный или не существует.'
-                )
-                return;
-            }
-            const orgId = invitation?.organization_id;
-            const student = await studentService.registerStudent(ctx.from, orgId);
-            await studentService.assignAutoCourses(student);
-            if (invitation?.group_id) {
-                await studentService.assignGroupById(student, invitation?.group_id);
-            }
-            const keyboard = keyboardFactory.createMainMenuKeyboard();
-
-            await ctx.reply(
-                '✅ Добро пожаловать! Выберите действие:',
-                { reply_markup: keyboard }
-            );
         } catch (error) {
             logger.error('Error in StudentController.acceptInvitation', error);
             await errorHandler(ctx, error);
@@ -250,23 +265,27 @@ class StudentController {
         }
     }
 
-    static async showCheckedResult(ctx, attemptId) {
+    static async showResultQuestion(ctx, attemptId, questionIndex = 0) {
         try {
             const studentId = ctx.state.student.id;
             const attempt = await studentService.getAttemptDetails(attemptId);
 
-            if (!attempt || attempt.studentId !== studentId) {
+            if (!attempt || String(attempt.studentId) !== String(studentId)) {
                 await ctx.answerCallbackQuery('❌ Результат не найден или недоступен');
                 return;
             }
 
             const task = attempt.task;
-            if (!task || !task.questions) {
+            if (!task || !task.questions?.length) {
                 await ctx.answerCallbackQuery('❌ Нет данных о задании');
                 return;
             }
 
             const questions = task.questions.sort((a, b) => (a.order || 0) - (b.order || 0));
+            const totalQuestions = questions.length;
+            const safeIndex = Math.max(0, Math.min(questionIndex, totalQuestions - 1));
+            const q = questions[safeIndex];
+
             const answers = attempt.answers || [];
             const manualScores = attempt.metadata?.manual_scores || {};
             const explanations = attempt.metadata?.free_text_explanations || {};
@@ -276,35 +295,32 @@ class StudentController {
                 return entry ? entry.answer : null;
             };
 
-            // Форматирование ответа (без экранирования)
+            // Форматирование ответа без Markdown
             const formatAnswer = (question, userAnswer) => {
-                if (userAnswer === null || userAnswer === undefined) return '_Нет ответа_';
+                if (userAnswer === null || userAnswer === undefined) return 'Нет ответа';
                 switch (question.questionType) {
                     case 'text':
                     case 'free_text':
-                        return `_${String(userAnswer)}_`;
+                        return String(userAnswer);
                     case 'single_choice': {
                         const opt = question.options?.[userAnswer]?.text;
-                        return opt ? `_${opt}_` : '_Неизвестный вариант_';
+                        return opt || 'Неизвестный вариант';
                     }
                     case 'multiple_choice': {
-                        if (!Array.isArray(userAnswer)) return `_${String(userAnswer)}_`;
+                        if (!Array.isArray(userAnswer)) return String(userAnswer);
                         const selected = userAnswer
                             .map(idx => question.options?.[idx]?.text)
                             .filter(Boolean);
-                        return selected.length
-                            ? `_${selected.join(', ')}_`
-                            : '_\\-_';
+                        return selected.length ? selected.join(', ') : '-';
                     }
                     default:
-                        return `_${String(userAnswer)}_`;
+                        return String(userAnswer);
                 }
             };
 
-            // Правильный ответ
+            // Правильный ответ без Markdown
             const getCorrectAnswer = (question) => {
-                if (!question.correctAnswers || question.correctAnswers.length === 0)
-                    return 'Не указан';
+                if (!question.correctAnswers?.length) return 'Не указан';
                 switch (question.questionType) {
                     case 'text':
                     case 'free_text': {
@@ -326,57 +342,52 @@ class StudentController {
                 }
             };
 
-            // Сборка сообщения
-            let message = `*📊 Результат: ${task.title || 'Без названия'}*\n`;
-            message += `*Тип:* ${StudentController.typeLabel(attempt.progressableType)}\n`;
-            message += `*Баллы:* ${attempt.points} / ${attempt.maxPoints}\n`;
-            message += `*Статус:* ${attempt.checked ? '✅ Проверено' : '⏳ Ожидает проверки'}\n\n`;
-            message += `*Вопросы и ответы:*\n`;
+            const userAnswer = getUserAnswer(q.id);
+            const maxPoints = q.points || 0;
+            const isFreeText = q.questionType === 'free_text';
 
-            for (let i = 0; i < questions.length; i++) {
-                const q = questions[i];
-                const questionId = q.id;
-                const userAnswer = getUserAnswer(questionId);
-                const maxPoints = q.points || 0;
-                const isFreeText = q.questionType === 'free_text';
+            let earnedPoints = 0;
+            let pointText = '';
+            let explanationText = '';
 
-                let earnedPoints = 0;
-                let pointText = '';
-                let explanationText = '';
-
-                if (isFreeText) {
-                    earnedPoints = manualScores[questionId] !== undefined ? manualScores[questionId] : 0;
-                    pointText = `${earnedPoints} / ${maxPoints}`;
-                    const expl = explanations[questionId];
-                    if (expl) {
-                        explanationText = `\n  _Пояснение:_ ${expl}`;
-                    }
-                } else {
-                    const correct = StudentController.isAnswerCorrect(q, userAnswer);
-                    earnedPoints = correct ? maxPoints : 0;
-                    pointText = `${earnedPoints} / ${maxPoints}`;
-                    explanationText = `\n  _Правильный ответ:_ ${getCorrectAnswer(q)}`;
-                }
-
-                message += `\n*Вопрос ${i + 1}:* ${q.question}\n`;
-                message += `  Ответ: ${formatAnswer(q, userAnswer)}\n`;
-                message += `  Баллы: ${pointText}${explanationText}\n`;
+            if (isFreeText) {
+                earnedPoints = manualScores[q.id] !== undefined ? manualScores[q.id] : 0;
+                pointText = `${earnedPoints} / ${maxPoints}`;
+                const expl = explanations[q.id];
+                if (expl) explanationText = `\n  Пояснение: ${expl}`;
+            } else {
+                const correct = StudentController.isAnswerCorrect(q, userAnswer);
+                earnedPoints = correct ? maxPoints : 0;
+                pointText = `${earnedPoints} / ${maxPoints}`;
+                explanationText = `\n  Правильный ответ: ${getCorrectAnswer(q)}`;
             }
 
-            const keyboard = new InlineKeyboard()
-                .text('🔙 К результатам', 'show_checked_results');
+            // Сборка сообщения без Markdown
+            let message = `📊 Результат: ${task.title || 'Без названия'}\n`;
+            message += `Тип: ${StudentController.typeLabel(attempt.progressableType)}\n`;
+            message += `Общий балл: ${attempt.points} / ${attempt.maxPoints}\n`;
+            message += `Статус: ${attempt.checked ? '✅ Проверено' : '⏳ Ожидает проверки'}\n\n`;
+            message += `Вопрос ${safeIndex + 1}/${totalQuestions}:\n`;
+            message += `${q.question}\n`;
+            message += `  Ответ: ${formatAnswer(q, userAnswer)}\n`;
+            message += `  Баллы: ${pointText}${explanationText}`;
+
+            // Клавиатура
+            const keyboard = new InlineKeyboard();
+            const navRow = [];
+            if (safeIndex > 0) navRow.push(InlineKeyboard.text('◀️ Предыдущий', `result_question:${attemptId}:${safeIndex - 1}`));
+            if (safeIndex < totalQuestions - 1) navRow.push(InlineKeyboard.text('▶️ Следующий', `result_question:${attemptId}:${safeIndex + 1}`));
+            if (navRow.length) keyboard.row(...navRow);
+            keyboard.text('🔙 К результатам', 'show_checked_results');
 
             const msgOptions = {
-                parse_mode: 'Markdown',
+                // parse_mode убран, сообщение отправляется как обычный текст
                 reply_markup: keyboard,
             };
 
             if (ctx.callbackQuery) {
-                try {
-                    await ctx.editMessageText(message, msgOptions);
-                } catch (e) {
-                    await ctx.reply(message, msgOptions);
-                }
+                try { await ctx.editMessageText(message, msgOptions); }
+                catch (e) { await ctx.reply(message, msgOptions); }
             } else {
                 await ctx.reply(message, msgOptions);
             }
@@ -384,11 +395,10 @@ class StudentController {
 
         } catch (error) {
             console.error(error);
-            logger.error('Error in showCheckedResult:', error);
+            logger.error('Error in showResultQuestion:', error);
             await ctx.answerCallbackQuery('❌ Ошибка при загрузке результата');
         }
     }
-
     // Статические вспомогательные методы
     static typeLabel(type) {
         const labels = {

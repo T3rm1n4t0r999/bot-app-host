@@ -114,15 +114,14 @@ class HomeworkController {
                 await ctx.answerCallbackQuery('Домашнее задание отсутсвует');
                 return;
             }
-            const lastAttempt = await studentService.findLastResult(student?.id,'homework', homeworkId);
-            const bestAttempt = await studentService.findBestResult(student?.id,'homework', homeworkId);
+            const lastBestAttempt = await studentService.findLastBestResult(student?.id,'homework', homeworkId);
 
             let message = '';
-            if (lastAttempt){
-                const homeworkAttemptMessage = homework.maxAttempts < 1 ? lastAttempt : `${lastAttempt} / ${homework.maxAttempts}`;
+            if (lastBestAttempt){
+                const homeworkAttemptMessage = homework.maxAttempts < 1 ? lastBestAttempt.attempt : `${lastBestAttempt.attempt} / ${homework.maxAttempts}`;
                 message = 'Домашнее задание:\n\n'+
                     `📖 *Название*: ${homework.title}\n`+
-                    `🏆 *Баллы*: ${bestAttempt} / ${homework.maxScore}\n`+
+                    `🏆 *Баллы*: ${lastBestAttempt.points} / ${homework.maxScore}\n`+
                 `*Попыток*: ${homeworkAttemptMessage}`;
             }else{
                 message = 'Домашнее задание:\n\n'+
@@ -130,6 +129,7 @@ class HomeworkController {
                     `🏆 *Максимально баллов*: ${homework.maxScore}\n`+
                 `*Максимально попыток*: ${homework.maxAttempts < 1 ? 'Не ограничено' : homework.maxAttempts}`;
             }
+            const blocked = task.maxAttempts === lastBestAttempt?.attempt;
             const keyboard = KeyboardFactory.createHomeworkTaskKeyboard(homeworkId, 'homework');
             await this.updateMessage(ctx, message, keyboard);
             await ctx.answerCallbackQuery();

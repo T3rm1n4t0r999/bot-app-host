@@ -94,12 +94,11 @@ class LessonMaterialController {
 
             if (imageFile) {
                 mediaType = 'photo';
-                //mediaUrl = buildStorageUrl(imageFile);
-                mediaUrl = 'https://main-cdn.sbermegamarket.ru/big2/hlr-system/-10/971/421/202/251/32/100048530701b1.jpg';
+                mediaUrl = buildStorageUrl(imageFile);
             } else if (videoFile) {
                 mediaType = 'video';
-                //mediaUrl = buildStorageUrl(videoFile);
-                mediaUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
+                mediaUrl = buildStorageUrl(videoFile);
+
             } else if (material.video_url) {
                 message += `\n\n📹 [Смотреть видео](${material.video_url})`;
             }

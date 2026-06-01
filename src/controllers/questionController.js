@@ -236,8 +236,7 @@ class QuestionController {
                     // Строим полный URL (замените на свою логику)
                     const BASE_STORAGE_URL = process.env.FILE_STORAGE_URL || 'https://edubot.fun';
                     const encodedPath = imageFile.path.split('/').map(encodeURIComponent).join('/');
-                    imageUrl = 'https://images.steamusercontent.com/ugc/2287327615050600030/CB6AB756334D3A684F41DAC92AE9BDBC07F86D2C/?imw=512&amp;imh=288&amp;ima=fit&amp;impolicy=Letterbox&amp;imcolor=%23000000&amp;letterbox=true';
-                    //imageUrl = `${BASE_STORAGE_URL}/storage/${encodedPath}`;
+                    imageUrl = `${BASE_STORAGE_URL}/storage/${encodedPath}`;
                 }
             }
 

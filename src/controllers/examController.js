@@ -115,26 +115,25 @@ class ExamController {
             }
             const time_limit = exam.timeLimit ? exam.timeLimit + ' мин.': 'Не ограничено';
 
-            const lastAttempt = await studentService.findLastResult(student?.id,'exam', exam);
-            const bestAttempt = await studentService.findBestResult(student?.id,'exam', examId);
+            const lastBestAttempt = await studentService.findLastBestResult(student?.id,'exam', exam);
 
             let message = '';
-            if (lastAttempt){
-                const examAttemptMessage = exam.maxAttempts < 1 ? lastAttempt : `${lastAttempt} / ${exam.maxAttempts}`;
-                message = 'Домашнее задание:\n\n'+
+            if (lastBestAttempt){
+                const examAttemptMessage = exam.maxAttempts < 1 ? lastBestAttempt.attempt : `${lastBestAttempt.attempt} / ${exam.maxAttempts}`;
+                message = 'Контрольная работа:\n\n'+
                     `📖 *Название*: ${exam.title}\n`+
-                    `🏆 *Баллы*: ${bestAttempt} / ${exam.maxScore}\n`+
+                    `🏆 *Баллы*: ${lastBestAttempt.points} / ${exam.maxScore}\n`+
                     `⏳ *Время*: ${time_limit}\n`;
                     `*Попыток*: ${examAttemptMessage}`;
             }else{
-                message = 'Домашнее задание:\n\n'+
+                message = 'Контрольная работа:\n\n'+
                     `📖 *Название*: ${exam.title}\n`+
                     `🏆 *Максимально баллов*: ${exam.maxScore}\n`+
                     `⏳ *Время*: ${time_limit}\n`;
                     `*Максимально попыток*: ${exam.maxAttempts < 1 ? 'Не ограничено' : exam.maxAttempts}`;
             }
 
-
+            const blocked = task.maxAttempts === lastBestAttempt?.attempt;
             const keyboard = KeyboardFactory.createExamTaskKeyboard(examId, 'exam');
             await this.updateMessage(ctx, message, keyboard);
             await ctx.answerCallbackQuery();

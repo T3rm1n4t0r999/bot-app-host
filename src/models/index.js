@@ -327,13 +327,11 @@ function setupAssociations() {
     LessonTask.hasMany(Question, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'lesson_task' },
         as: 'questions'
     });
     Question.belongsTo(LessonTask, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'lesson_task' },
         as: 'lessonTask'
     });
 
@@ -341,13 +339,11 @@ function setupAssociations() {
     Homework.hasMany(Question, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'homework' },
         as: 'questions'
     });
     Question.belongsTo(Homework, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'homework' },
         as: 'homework'
     });
 
@@ -355,13 +351,11 @@ function setupAssociations() {
     Exam.hasMany(Question, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'exam' },
         as: 'questions'
     });
     Question.belongsTo(Exam, {
         foreignKey: 'questionableId',
         constraints: false,
-        scope: { questionable_type: 'exam' },
         as: 'exam'
     });
 

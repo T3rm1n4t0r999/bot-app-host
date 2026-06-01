@@ -96,14 +96,24 @@ class KeyboardFactory {
         return keyboard;
     }
 
-    static createHomeworkTaskKeyboard(homeworkId, entityType = 'homework') {
+    static createHomeworkTaskKeyboard(homeworkId, entityType = 'homework', blocked = false) {
+        if (blocked) {
+            return new InlineKeyboard()
+                .text('🔙 К заданию', 'back_to_homework')
+                .row();
+        }
         return new InlineKeyboard()
             .text('🔙 К заданию', 'back_to_homework')
             .text('Начать выполнение', `start_task:${homeworkId}:${entityType}`)
             .row();
     }
 
-    static createExamTaskKeyboard(examId, entityType = 'exam') {
+    static createExamTaskKeyboard(examId, entityType = 'exam', blocked = false) {
+        if (blocked) {
+            return new InlineKeyboard()
+                .text('🔙 К заданию', 'back_to_exam')
+                .row();
+        }
         return new InlineKeyboard()
             .text('🔙 К заданию', 'back_to_exam')
             .text('Начать выполнение', `start_task:${examId}:${entityType}`)
@@ -118,7 +128,12 @@ class KeyboardFactory {
     /**
      * Клавиатура для задания
      */
-    static createLessonTaskKeyboard(taskId, lessonId, entityType = 'lesson_task'){
+    static createLessonTaskKeyboard(taskId, lessonId, entityType = 'lesson_task', blocked = false){
+        if (blocked) {
+            return new InlineKeyboard()
+                .text('🔙 К уроку', `view_tasks:${lessonId}`)
+                .row();
+        }
         return new InlineKeyboard()
             .text('🔙 К уроку', `view_tasks:${lessonId}`)
             .text('Начать выполнение', `start_task:${taskId}:${entityType}`)

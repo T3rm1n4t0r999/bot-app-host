@@ -4,7 +4,7 @@ const logger = require("../logger/logger");
 const {sequelize} = require("../database/db");
 const {Op} = require("sequelize");
 const {resolveModelType} = require("../utils/modelResolver");
-const {Question} = require("../models");
+const {Question, LessonTask} = require("../models");
 
 
 class StudentProgressRepository extends BaseRepository {
@@ -32,17 +32,22 @@ class StudentProgressRepository extends BaseRepository {
         const progress = await StudentProgress.findByPk(attemptId);
         if (!progress) return null;
 
-        const model = resolveModelType(progress.progressableType);
+        const type = progress.progressableType;
+        const id = progress.progressableId;
+        const model = resolveModelType(type);
         if (model) {
-            progress.dataValues.task = await model.findByPk(progress.progressableId, {
-                include: [{
-                    model: Question,
-                    as: 'questions',
-                    required: false,
-                }],
-            });
+            const task = await model.findByPk(id);
+            if (task) {
+                const taskObj = task.toJSON();          // обычный объект
+                taskObj.questions = await Question.findAll({
+                    where: { questionableId: id, questionableType: type },
+                    order: [['order', 'ASC']],
+                });
+                progress.dataValues.task = taskObj;     // кладём в dataValues
+            }
         }
-        return progress;
+        // Возвращаем plain object, чтобы все свойства были доступны напрямую
+        return progress.toJSON();
     }
 
     async getBestAttempts(studentId) {
@@ -77,7 +82,7 @@ class StudentProgressRepository extends BaseRepository {
      * @param progressableId
      * @returns {Promise<Object|null>}
      */
-    async findBestResult(studentId, progressableType, progressableId) {
+    async findLastBestResult(studentId, progressableType, progressableId) {
         try {
             return await this.findOne({
                 where: {
@@ -85,7 +90,7 @@ class StudentProgressRepository extends BaseRepository {
                     progressableType: progressableType,
                     progressableId: progressableId
                 },
-                order: [['points', 'DESC']]
+                order: [['points', 'DESC'], ['attempt', 'DESC']]
             });
         } catch (e) {
             console.error('Error in findBestResult:', e);
@@ -93,21 +98,6 @@ class StudentProgressRepository extends BaseRepository {
         }
     }
 
-    async findLastResult(studentId, progressableType, progressableId) {
-        try {
-            return await this.findOne({
-                where: {
-                    studentId: studentId,
-                    progressableType: progressableType,
-                    progressableId: progressableId
-                },
-                order: [['attempts', 'DESC']]
-            });
-        } catch (e) {
-            console.error('Error in findBestResult:', e);
-            throw e;
-        }
-    }
 
     /**
      * Сохранить результат студента

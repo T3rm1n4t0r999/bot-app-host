@@ -126,24 +126,23 @@ class LessonTaskController {
                 return;
             }
             const student =  ctx?.state?.student;
-            const lastAttempt = await studentService.findLastResult(student?.id,'lesson_task', taskId);
-            const bestAttempt = await studentService.findBestResult(student?.id,'lesson_task', taskId);
+            const lastBestAttempt = await studentService.findLastBestResult(student?.id,'lesson_task', taskId);
             const lessonId = task.lessonId;
             let message = '';
-            if (lastAttempt){
-                const taskAttemptMessage = task.maxAttempts < 1 ? lastAttempt : `${lastAttempt} / ${task.maxAttempts}`;
-                message = 'Домашнее задание:\n\n'+
+            if (lastBestAttempt){
+                const taskAttemptMessage = task.maxAttempts < 1 ? lastBestAttempt.attempt : `${lastBestAttempt.attempt} / ${task.maxAttempts}`;
+                message = 'Практическое задание:\n\n'+
                     `📖 *Название*: ${task.title}\n`+
-                    `🏆 *Баллы*: ${bestAttempt} / ${task.maxScore}\n`+
+                    `🏆 *Баллы*: ${lastBestAttempt.points} / ${task.maxScore}\n`+
                     `*Попыток*: ${taskAttemptMessage}`;
             }else{
-                message = 'Домашнее задание:\n\n'+
+                message = 'Практическое задание:\n\n'+
                     `📖 *Название*: ${task.title}\n`+
                     `🏆 *Максимально баллов*: ${task.maxScore}\n`+
                     `*Максимально попыток*: ${task.maxAttempts < 1 ? 'Не ограничено' : task.maxAttempts}`;
             }
-
-            const keyboard = KeyboardFactory.createLessonTaskKeyboard(task.id, lessonId, 'lesson_task');
+            const blocked = task.maxAttempts === lastBestAttempt?.attempt;
+            const keyboard = KeyboardFactory.createLessonTaskKeyboard(task.id, lessonId, 'lesson_task', blocked);
 
             await this.updateMessage(ctx, message, keyboard);
             await ctx.answerCallbackQuery();

@@ -209,18 +209,9 @@ class StudentService {
      * @param entityId
      * @returns {Promise<Object|null>}
      */
-    async findBestResult(studentId, entityType, entityId){
+    async findLastBestResult(studentId, entityType, entityId){
         try {
-            return await this.studentProgressRepo.findBestResult(studentId, entityType, entityId);
-        } catch (e) {
-            logger.error(e);
-            throw e;
-        }
-    }
-
-    async findLastResult(studentId, entityType, entityId){
-        try {
-            return await this.studentProgressRepo.findLastResult(studentId, entityType, entityId);
+            return await this.studentProgressRepo.findLastBestResult(studentId, entityType, entityId);
         } catch (e) {
             logger.error(e);
             throw e;

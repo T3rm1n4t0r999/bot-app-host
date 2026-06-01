@@ -76,7 +76,8 @@ router.callbackQuery('show_all_results', requireRegistration(), requireStudentRo
 router.callbackQuery('show_checked_results', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
 router.callbackQuery('show_unchecked_results', requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
 router.callbackQuery(/results_page:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
-router.callbackQuery(/show_result:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery)
+router.callbackQuery(/show_result:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery);
+router.callbackQuery(/result_question:\d+:\d+/, requireRegistration(), requireStudentRole(), StudentController.handleCallbackQuery)
 
 // Команды бота
 
