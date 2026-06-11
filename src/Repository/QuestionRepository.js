@@ -1,4 +1,4 @@
-const BaseRepository = require(`./baseRepository`);
+const BaseRepository = require(`./BaseRepository`);
 const Question = require("../Models/Question");
 const Logger = require("../Logger/Logger");
 const {resolveModelType} = require("../Utils/ModelResolver");
