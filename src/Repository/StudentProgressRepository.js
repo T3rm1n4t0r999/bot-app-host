@@ -4,7 +4,7 @@ const logger = require("../Logger/Logger");
 const {sequelize} = require("../Database/db");
 const {Op} = require("sequelize");
 const {resolveModelType} = require("../Utils/ModelResolver");
-const {Question, LessonTask} = require("../Models");
+const Question = require("../Models/Question");
 
 
 class StudentProgressRepository extends BaseRepository {

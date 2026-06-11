@@ -1,9 +1,8 @@
 const BaseRepository = require('./BaseRepository');
 const Student = require('../Models/Student');
-const StudentCourse = require('../Models/StudentCourse');
-const Course = require('../Models/Course');
 const logger = require('../Logger/Logger');
-const {GroupStudent, GroupCourse} = require("../Models");
+const GroupStudent = require("../Models/GroupStudent");
+
 
 class StudentRepository extends BaseRepository {
     constructor() {

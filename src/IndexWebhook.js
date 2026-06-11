@@ -4,7 +4,7 @@ const express = require('express');
 const logger = require('./Logger/Logger');
 const { sequelize } = require("./Database/db");
 const RedisService = require("./Services/RedisService");
-const { setupAssociations } = require("./Models");
+const { setupAssociations } = require("./Models/Index");
 const botManager = require('./Bot/BotManager');
 const {post} = require("axios");
 

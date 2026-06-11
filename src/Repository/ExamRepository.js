@@ -1,8 +1,6 @@
 const BaseRepository = require("./BaseRepository");
 const StudentExam = require("../Models/StudentExam");
 const Exam = require("../Models/Exam");
-const logger = require("../Logger/Logger");
-const {sequelize, StudentCourse} = require("../Models");
 class ExamRepository extends BaseRepository {
     constructor() {
         super(Exam);

@@ -1,9 +1,8 @@
 // repositories/LessonTaskRepository.js
 const BaseRepository = require('./BaseRepository');
 const LessonTask = require('../Models/LessonTask');
-const File = require('../Models/File');
-const StudentProgress = require('../Models/StudentProgress');
-const {Lesson, Module} = require("../Models");
+const Module = require('../Models/Module');
+const Lesson = require('../Models/Lesson');
 
 class LessonTaskRepository extends BaseRepository {
     constructor() {
