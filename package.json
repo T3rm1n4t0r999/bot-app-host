@@ -1,9 +1,9 @@
 {
   "name": "bot-app-nodejs",
   "version": "1.0.0",
-  "main": "src/index_polling.js",
+  "main": "src/IndexPolling.js",
   "scripts": {
-    "dev": "nodemon src/index_polling.js",
+    "dev": "nodemon src/IndexPolling.js",
     "seed": "node src/scripts/seed.js",
     "diag": "node src/utils/diagnosticAssociations.js"
   },
