@@ -1,11 +1,11 @@
 // IndexWebhook.js
 require('dotenv').config();
 const express = require('express');
-const logger = require('./logger/Logger');
-const { sequelize } = require("./database/db");
-const RedisService = require("./services/RedisService");
-const { setupAssociations } = require("./models");
-const botManager = require('./bot/BotManager');
+const logger = require('./Logger/Logger');
+const { sequelize } = require("./Database/db");
+const RedisService = require("./Services/RedisService");
+const { setupAssociations } = require("./Models");
+const botManager = require('./Bot/BotManager');
 const {post} = require("axios");
 
 const app = express();
@@ -32,7 +32,7 @@ const verifyManagerToken = (req, res, next) => {
     next();
 };
 
-// Применяем middleware ко всем /admin/* роутам
+// Применяем Middleware ко всем /admin/* роутам
 app.use('/admin', verifyManagerToken);
 
 
@@ -45,7 +45,7 @@ app.post('/admin/start-bot', async (req, res) => {
         const result = await botManager.startBot(token, PUBLIC_URL);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to start bot', details: error.message });
+        res.status(500).json({ error: 'Failed to start Bot', details: error.message });
     }
 });
 
@@ -58,7 +58,7 @@ app.post('/admin/stop-bot', async (req, res) => {
         if (!result.success) return res.status(404).json(result);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to stop bot', details: error.message });
+        res.status(500).json({ error: 'Failed to stop Bot', details: error.message });
     }
 });
 

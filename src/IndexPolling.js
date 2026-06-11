@@ -1,9 +1,9 @@
 require('dotenv').config();
-const createBot = require('./bot/BotPolling');
-const {sequelize} = require("./database/db");
-const RedisService = require("./services/RedisService");
-const {setupAssociations} = require("./models");
-const logger = require("./logger/Logger");
+const createBot = require('./Bot/BotPolling');
+const {sequelize} = require("./Database/db");
+const RedisService = require("./Services/RedisService");
+const {setupAssociations} = require("./Models");
+const logger = require("./Logger/Logger");
 
 (async () => {
     try {

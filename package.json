@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon src/IndexPolling.js",
     "seed": "node src/scripts/seed.js",
-    "diag": "node src/utils/diagnosticAssociations.js"
+    "diag": "node src/Utils/diagnosticAssociations.js"
   },
   "author": "",
   "license": "ISC",

@@ -1,0 +1,39 @@
+const {NotFoundError, UnauthorizedError, ValidationError} = require("../Utils/Errors");
+const StudentService = require("../Services/StudentService");
+const errorHandler = require("../Utils/ErrorHandler");
+const logger = require("../Logger/Logger");
+// Создаем экземпляр сервиса
+const studentService = new StudentService();
+
+/**
+ * Проверка регистрации пользователя
+ * @returns {(function(*, *): Promise<void>)|*}
+ */
+function requireRegistration() {
+    return async (ctx, next) => {
+        const telegramId = ctx.from?.id?.toString();
+
+        if (!telegramId) {
+            throw new ValidationError('Telegram ID not provided');
+        }
+
+        try {
+            const student = await studentService.getStudentProfile(telegramId);
+
+            if (!student) {
+                throw new NotFoundError('Telegram ID not found');
+            }
+
+            // Инициализация state если не существует
+            ctx.state = ctx.state || {};
+            ctx.state.student = student;
+
+            await next();
+        } catch (error) {
+            logger.error('Error in Middleware.requireRegistration', error);
+            await errorHandler(ctx, error);
+        }
+    };
+}
+
+module.exports = requireRegistration;
